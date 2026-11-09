@@ -658,6 +658,10 @@ export type Database = {
         Args: { p_club_id: string; p_invitation_code: string }
         Returns: Json
       }
+      remove_club_member: {
+        Args: { p_club_id: string; p_target_user_id: string }
+        Returns: boolean
+      }
       review_club_report: {
         Args: { p_actor_id: string; p_report_id: string; p_status: string }
         Returns: boolean
