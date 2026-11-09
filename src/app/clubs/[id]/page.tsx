@@ -65,7 +65,7 @@ export default async function ClubPage({
   const memberIds = (members ?? []).map((member) => member.user_id)
   const [{ data: memberProfiles }, { data: reports }] = await Promise.all([
     memberIds.length
-      ? supabase.from('profiles').select('id,username,display_name').in('id', memberIds)
+      ? supabase.from('public_profiles').select('id,username,display_name').in('id', memberIds)
       : Promise.resolve({ data: [] }),
     isModerator
       ? supabase.from('club_reports')
