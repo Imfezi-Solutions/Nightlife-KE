@@ -173,10 +173,11 @@ export async function reviewClubReportAction(formData: FormData) {
   const reviewerId = claims?.claims?.sub
   if (!reviewerId) redirect('/login')
 
-  const { error } = await supabase.from('club_reports')
-    .update({ status: parsed.data.status, reviewed_by: reviewerId })
-    .eq('id', parsed.data.report_id)
-    .eq('club_id', parsed.data.club_id)
+  const { error } = await supabase.rpc('review_club_report_by_club_moderator', {
+    p_report_id: parsed.data.report_id,
+    p_club_id: parsed.data.club_id,
+    p_status: parsed.data.status,
+  })
 
   if (error) redirect(`/clubs/${parsed.data.club_id}?error=review`)
   revalidatePath(`/clubs/${parsed.data.club_id}`)
