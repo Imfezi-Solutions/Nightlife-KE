@@ -88,3 +88,23 @@ grant select,insert,update,delete on public.dj_queue to authenticated;
 
 alter publication supabase_realtime add table public.dj_sessions;
 alter publication supabase_realtime add table public.dj_queue;
+
+
+-- A DJ cannot select a pending/rejected track or a track from another room.
+create or replace function app_private.enforce_approved_dj_session_track()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+  if new.current_track_id is not null and not exists (
+    select 1 from public.dj_queue q
+    where q.id=new.current_track_id and q.room_id=new.room_id and q.rights_status='approved'
+  ) then
+    raise exception 'Only a rights-approved track from this room can be selected';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function app_private.enforce_approved_dj_session_track() from public,anon,authenticated;
+create trigger enforce_approved_track_on_dj_session
+before insert or update of current_track_id,room_id on public.dj_sessions
+for each row execute function app_private.enforce_approved_dj_session_track();
