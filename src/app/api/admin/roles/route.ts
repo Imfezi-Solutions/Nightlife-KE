@@ -12,7 +12,7 @@ export async function POST(request:Request){
  const body=await request.json().catch(()=>null) as {email?:unknown;role?:unknown}|null
  const email=typeof body?.email==='string'?body.email.trim().toLowerCase():''
  const role=String(body?.role??'')
- if(!email||email.length>254||!email.includes('@')||!allowedRoles.includes(role))return NextResponse.json({error:'Enter a valid email and platform role.'},{status:400})
+ if(!email||email.length>254||!email.includes('@')||!allowedRoles.includes(role as typeof allowedRoles[number]))return NextResponse.json({error:'Enter a valid email and platform role.'},{status:400})
  const admin=createAdminClient()
  const {data:userList,error:listError}=await admin.auth.admin.listUsers({page:1,perPage:1000})
  if(listError)return NextResponse.json({error:'Could not find the target account.'},{status:500})
