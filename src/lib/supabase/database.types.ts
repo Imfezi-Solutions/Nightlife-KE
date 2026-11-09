@@ -347,6 +347,57 @@ export type Database = {
           },
         ]
       }
+      payment_intents: {
+        Row: {
+          amount_kes: number
+          checkout_request_id: string | null
+          created_at: string
+          credits: number
+          external_reference: string
+          id: string
+          mpesa_receipt: string | null
+          package_id: string
+          paid_at: string | null
+          payhero_reference: string | null
+          provider_payload: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_kes: number
+          checkout_request_id?: string | null
+          created_at?: string
+          credits: number
+          external_reference: string
+          id?: string
+          mpesa_receipt?: string | null
+          package_id: string
+          paid_at?: string | null
+          payhero_reference?: string | null
+          provider_payload?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_kes?: number
+          checkout_request_id?: string | null
+          created_at?: string
+          credits?: number
+          external_reference?: string
+          id?: string
+          mpesa_receipt?: string | null
+          package_id?: string
+          paid_at?: string | null
+          payhero_reference?: string | null
+          provider_payload?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_djs: {
         Row: {
           granted_at: string
@@ -450,6 +501,68 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          credits_delta: number
+          description: string
+          entry_type: string
+          id: string
+          payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          credits_delta: number
+          description: string
+          entry_type: string
+          id?: string
+          payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          credits_delta?: number
+          description?: string
+          entry_type?: string
+          id?: string
+          payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_payment_intent_id_fkey"
+            columns: ["payment_intent_id"]
+            isOneToOne: true
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance_credits: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_credits?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_credits?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -472,6 +585,16 @@ export type Database = {
       preview_invite_club: {
         Args: { p_club_id: string; p_invitation_code: string }
         Returns: Json
+      }
+      settle_payhero_payment: {
+        Args: {
+          p_amount_kes: number
+          p_external_reference: string
+          p_mpesa_receipt: string
+          p_payhero_reference: string
+          p_provider_payload: Json
+        }
+        Returns: boolean
       }
     }
     Enums: {
