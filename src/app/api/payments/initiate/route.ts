@@ -35,6 +35,12 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Sign in before purchasing credits.' }, { status: 401 })
 
+  const { data: ageVerification } = await supabase.from('age_verifications')
+    .select('id').eq('user_id', user.id).eq('status', 'verified')
+    .not('verified_at', 'is', null).gt('expires_at', new Date().toISOString())
+    .limit(1).maybeSingle()
+  if (!ageVerification) return NextResponse.json({ error: 'Current 18+ verification is required before purchasing credits.' }, { status: 403 })
+
   const username = process.env.PAYHERO_USERNAME
   const password = process.env.PAYHERO_PASSWORD
   const channelId = Number(process.env.PAYHERO_CHANNEL_ID)
