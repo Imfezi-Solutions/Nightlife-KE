@@ -6,11 +6,12 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
   const supabase = await createClient()
   const { data: claims } = await supabase.auth.getClaims()
   if (!claims?.claims?.sub) redirect('/login')
-  const [{ data: profile }, { data: counties }, { data: clubs }, { data: verification }] = await Promise.all([
+  const [{ data: profile }, { data: counties }, { data: clubs }, { data: verification }, { data: adminAssignment }] = await Promise.all([
     supabase.from('profiles').select('display_name,county_id').eq('id', claims.claims.sub).single(),
     supabase.from('counties').select('id,name').order('name'),
     supabase.from('clubs').select('id,name,slug,description,capacity,county_id').eq('status','active').eq('visibility','public').order('created_at',{ascending:false}).limit(24),
     supabase.from('age_verifications').select('status,expires_at').eq('user_id',claims.claims.sub).eq('status','verified').not('verified_at','is',null).gt('expires_at',new Date().toISOString()).order('verified_at',{ascending:false}).limit(1).maybeSingle(),
+    supabase.from('platform_admins').select('role').eq('user_id',claims.claims.sub).maybeSingle(),
   ])
   const params = await searchParams
   const verified = Boolean(verification && verification.expires_at && new Date(verification.expires_at) > new Date())
@@ -19,7 +20,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
     ? 'Valid 18+ verification is required before joining a club.'
     : params.error ? 'We could not complete that action. Check the club details and try again.' : ''
   return <main className="min-h-screen px-5 py-8 sm:px-8">
-    <header className="mx-auto flex max-w-7xl items-center justify-between"><Link href="/" className="text-lg font-black">NIGHTLIFE<span className="text-lime-300"> KE</span></Link><div className="flex items-center gap-4"><Link href="/wallet" className="text-sm font-semibold text-lime-200 hover:text-lime-100">Wallet</Link><span className="text-sm text-zinc-400">Hey, {profile?.display_name || 'there'}</span></div></header>
+    <header className="mx-auto flex max-w-7xl items-center justify-between"><Link href="/" className="text-lg font-black">NIGHTLIFE<span className="text-lime-300"> KE</span></Link><div className="flex items-center gap-4"><Link href="/wallet" className="text-sm font-semibold text-lime-200 hover:text-lime-100">Wallet</Link>{adminAssignment&&<Link href="/admin" className="text-sm font-semibold text-violet-200 hover:text-violet-100">Admin</Link>}<span className="text-sm text-zinc-400">Hey, {profile?.display_name || 'there'}</span></div></header>
     <section className="mx-auto mt-12 max-w-7xl">
       <div className="flex flex-wrap items-end justify-between gap-6"><div><p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">Discover your scene</p><h1 className="mt-3 text-4xl font-black sm:text-5xl">Find your people.</h1><p className="mt-3 text-zinc-400">Explore public clubs across Kenya.</p></div><div className="flex items-center gap-3"><div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm"><span className="text-zinc-400">Age verification</span><p className={verified ? 'mt-1 font-semibold text-lime-300' : 'mt-1 font-semibold text-amber-300'}>{verified ? 'Verified' : 'Required before entry'}</p></div><Link href="/clubs/new" className="rounded-xl bg-lime-300 px-5 py-4 text-sm font-bold text-black">Create a club</Link></div></div>
       {!verified && <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5 text-sm leading-6 text-amber-100">Your profile is ready, but club entry and creation stay locked until a real age-verification provider confirms that you are 18+. Google sign-in alone is not age verification.</div>}
