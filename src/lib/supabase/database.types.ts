@@ -637,47 +637,7 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          avatar_config: Json | null
-          avatar_url: string | null
-          bio: string | null
-          county_id: number | null
-          created_at: string | null
-          display_name: string | null
-          id: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_config?: Json | null
-          avatar_url?: string | null
-          bio?: string | null
-          county_id?: number | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_config?: Json | null
-          avatar_url?: string | null
-          bio?: string | null
-          county_id?: number | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_county_id_fkey"
-            columns: ["county_id"]
-            isOneToOne: false
-            referencedRelation: "counties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       create_club: {
@@ -689,6 +649,19 @@ export type Database = {
           p_visibility?: string
         }
         Returns: Json
+      }
+      get_public_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_config: Json
+          avatar_url: string
+          bio: string
+          county_id: number
+          created_at: string
+          display_name: string
+          id: string
+          username: string
+        }[]
       }
       join_club: {
         Args: { p_club_id: string; p_invitation_code?: string }
