@@ -120,10 +120,10 @@ export async function removeClubMemberAction(formData: FormData) {
   const { data: claims } = await supabase.auth.getClaims()
   if (!claims?.claims?.sub) redirect('/login')
 
-  const { error } = await supabase.from('club_members')
-    .delete()
-    .eq('club_id', parsed.data.club_id)
-    .eq('user_id', parsed.data.target_user_id)
+  const { error } = await supabase.rpc('remove_club_member', {
+    p_club_id: parsed.data.club_id,
+    p_target_user_id: parsed.data.target_user_id,
+  })
 
   if (error) redirect(`/clubs/${parsed.data.club_id}?error=remove`)
   revalidatePath(`/clubs/${parsed.data.club_id}`)
