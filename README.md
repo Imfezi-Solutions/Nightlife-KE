@@ -46,7 +46,7 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - **Realtime privacy setting:** In Supabase Dashboard → Project Settings → Realtime Settings, turn OFF **Allow public access to channels** before testing private room Presence in production. The client uses private channels and RLS authorization policies are installed, but this dashboard toggle has not been changed by this repository.
 - **Realtime chat/presence:** Code and database policies are committed/applied. Multi-account browser testing is still required; Presence shows who is connected but is not a reservation/seat-lock system.
 - **3D rooms/avatars:** A Three.js / React Three Fiber nightclub scene is now implemented with low-data/high-quality rendering, keyboard and touch movement, dance styles, and private Realtime avatar position sharing. It still needs real multi-account browser testing, authoritative movement validation, collision refinement, optimized character assets and device profiling.
-- **Music:** Commercial music requires appropriate rights/licensing.
+- **Music:** DJs can upload original/public-domain audio into a private room bucket; playback is synchronized from room session state after approval. Commercial music still requires a licensed provider adapter and rights agreement.
 - **Payments/credits:** Wallet ledger, M-Pesa initiation route, PayHero callback verification, idempotent credit settlement and wallet history UI are implemented. Live payment testing still requires PayHero API credentials, channel ID, a public HTTPS callback URL, server-side Supabase service-role configuration, and Imfezi-approved credit packages/pricing.
 - **Safety operations:** Club reports, a role-gated platform moderation queue, report status updates and an administrative audit trail are implemented. User blocking/suspension, escalation workflows, automated abuse controls and retention policies remain open.
 
@@ -114,3 +114,10 @@ The `/admin` dashboard is role-gated and includes platform counts, report review
 For initial setup, configure `NIGHTLIFE_INITIAL_SUPER_ADMIN_EMAIL` to the verified email address of the first administrator, configure `SUPABASE_SERVICE_ROLE_KEY` server-side, sign in with that email, and visit `/admin/setup`. The bootstrap endpoint only grants the first super-admin role when no other administrator exists. After setup, remove or unset the allowlist variable. Additional administrators must be provisioned by the super administrator through a future role-management workflow or trusted database administration.
 
 The current dashboard does not yet implement account suspension/ban workflows, full club-management controls, or a complete administrator role-management interface.
+
+
+### Room audio and music rights
+
+Original and public-domain audio files (25 MB maximum) upload to the private `room-audio` bucket under a room/user-scoped path. Storage policies require an active verified DJ role to upload and current verified room membership to read. The player uses short-lived signed URLs, synchronized play/pause/stop state and a one-time local audio-enable action to satisfy browser autoplay restrictions. Track submissions remain pending until a super administrator or platform administrator approves or rejects the rights evidence; the decision is written to the platform audit log.
+
+Licensed-provider tracks can be submitted as metadata, but actual playback requires a provider-specific adapter and the applicable commercial agreement. Do not upload commercial recordings unless Imfezi has the necessary rights.
