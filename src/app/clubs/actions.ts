@@ -66,3 +66,42 @@ export async function joinClubAction(formData: FormData) {
   revalidatePath('/discover')
   redirect(`/clubs/${parsed.data.club_id}`)
 }
+
+
+const sendMessageSchema = z.object({
+  club_id: z.string().uuid(),
+  room_id: z.string().uuid(),
+  body: z.string().trim().min(1).max(1000),
+})
+
+export async function sendRoomMessageAction(formData: FormData) {
+  const parsed = sendMessageSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=message')
+
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  const userId = claims?.claims?.sub
+  if (!userId) redirect('/login')
+
+  const { data: room } = await supabase.from('rooms')
+    .select('id')
+    .eq('id', parsed.data.room_id)
+    .eq('club_id', parsed.data.club_id)
+    .maybeSingle()
+  if (!room) notFound()
+
+  const { error } = await supabase.from('chat_messages').insert({
+    club_id: parsed.data.club_id,
+    room_id: parsed.data.room_id,
+    author_id: userId,
+    body: parsed.data.body,
+  })
+
+  if (error) {
+    const reason = error.message.includes('rate limit') ? 'slow_down' : 'message'
+    redirect(`/clubs/${parsed.data.club_id}/rooms/${parsed.data.room_id}?error=${reason}`)
+  }
+
+  revalidatePath(`/clubs/${parsed.data.club_id}/rooms/${parsed.data.room_id}`)
+  redirect(`/clubs/${parsed.data.club_id}/rooms/${parsed.data.room_id}`)
+}
