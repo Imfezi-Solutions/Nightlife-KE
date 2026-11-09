@@ -666,6 +666,10 @@ export type Database = {
         Args: { p_actor_id: string; p_report_id: string; p_status: string }
         Returns: boolean
       }
+      review_club_report_by_club_moderator: {
+        Args: { p_club_id: string; p_report_id: string; p_status: string }
+        Returns: boolean
+      }
       review_dj_track: {
         Args: { p_actor_id: string; p_status: string; p_track_id: string }
         Returns: boolean
