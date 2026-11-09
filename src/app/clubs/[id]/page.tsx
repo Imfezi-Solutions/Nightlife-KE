@@ -208,9 +208,9 @@ export default async function ClubPage({
                 </div>
                 {report.details && <p className="mt-2 text-sm text-zinc-400">{report.details}</p>}
                 <p className="mt-2 text-xs text-zinc-500">Reported member: {profileById.get(report.reported_user_id)?.username || 'Member'} · {new Date(report.created_at).toLocaleString()}</p>
-                {report.status === 'open' && (
+                {report.status !== 'resolved' && report.status !== 'dismissed' && (
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {(['reviewing', 'resolved', 'dismissed'] as const).map((status) => (
+                    {(report.status === 'open' ? ['reviewing', 'resolved', 'dismissed'] as const : ['resolved', 'dismissed'] as const).map((status) => (
                       <form key={status} action={reviewClubReportAction}>
                         <input type="hidden" name="club_id" value={id} />
                         <input type="hidden" name="report_id" value={report.id} />
