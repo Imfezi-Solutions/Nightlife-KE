@@ -1,0 +1,19 @@
+name: Nightlife KE Runner Diagnostic
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runner-smoke-test:
+    name: Confirm GitHub Actions runner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm workflow was parsed and runner started
+        run: |
+          echo "Nightlife KE GitHub Actions runner is online."
+          echo "Commit: $GITHUB_SHA"
