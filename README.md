@@ -48,7 +48,7 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - **3D rooms/avatars:** A Three.js / React Three Fiber nightclub scene is now implemented with low-data/high-quality rendering, keyboard and touch movement, dance styles, and private Realtime avatar position sharing. It still needs real multi-account browser testing, authoritative movement validation, collision refinement, optimized character assets and device profiling.
 - **Music:** Commercial music requires appropriate rights/licensing.
 - **Payments/credits:** Wallet ledger, M-Pesa initiation route, PayHero callback verification, idempotent credit settlement and wallet history UI are implemented. Live payment testing still requires PayHero API credentials, channel ID, a public HTTPS callback URL, server-side Supabase service-role configuration, and Imfezi-approved credit packages/pricing.
-- **Safety operations:** Basic club reporting and moderator removal/review tools exist. Platform-wide blocking, escalation, moderator audit trails, spam controls and retention policies are still required before public launch.
+- **Safety operations:** Club reports, a role-gated platform moderation queue, report status updates and an administrative audit trail are implemented. User blocking/suspension, escalation workflows, automated abuse controls and retention policies remain open.
 
 The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live schema is not yet fully reproducible from a clean Supabase CLI database: the repository still needs a complete baseline migration for the pre-existing core schema and earlier DJ migrations. The newest room-movement authorization migration is recorded in `supabase/migrations/`, but do not treat that single file as a complete database bootstrap.
 
@@ -103,3 +103,14 @@ The wallet uses a server-only PayHero integration based on the current PayHero v
 Required server-only variables are listed in `.env.example`: `SUPABASE_SERVICE_ROLE_KEY`, `PAYHERO_USERNAME`, `PAYHERO_PASSWORD`, `PAYHERO_CHANNEL_ID`, and `NIGHTLIFE_CREDIT_PACKAGES_JSON`. Do not expose these as `NEXT_PUBLIC_` variables. Configure the package prices and credit amounts only after Imfezi approves them. Live payments remain disabled until the credentials and package configuration are supplied and tested end-to-end.
 
 The payment flow follows PayHero's documented [STK Push API](https://docs.payhero.co.ke/docs/post-initiate-mpesa-stk-push-request), [callback payload](https://docs.payhero.co.ke/docs/payment-callback), and [transaction status API](https://docs.payhero.co.ke/docs/get-transaction-status).
+
+
+## Platform administration
+
+Platform roles are stored in `public.platform_admins`: `super_admin`, `platform_admin`, `moderator`, `finance_admin`, and `support_admin`. Users can read only their own assignment. Role changes and audit-log writes are server-side only.
+
+The `/admin` dashboard is role-gated and includes platform counts, report review, finance payment review and an audit trail according to role permissions. Report status changes run through a database function that checks the actor's assigned role and records an audit entry atomically.
+
+For initial setup, configure `NIGHTLIFE_INITIAL_SUPER_ADMIN_EMAIL` to the verified email address of the first administrator, configure `SUPABASE_SERVICE_ROLE_KEY` server-side, sign in with that email, and visit `/admin/setup`. The bootstrap endpoint only grants the first super-admin role when no other administrator exists. After setup, remove or unset the allowlist variable. Additional administrators must be provisioned by the super administrator through a future role-management workflow or trusted database administration.
+
+The current dashboard does not yet implement account suspension/ban workflows, full club-management controls, or a complete administrator role-management interface.
