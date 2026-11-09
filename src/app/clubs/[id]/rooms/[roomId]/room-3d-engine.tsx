@@ -10,7 +10,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 type Dance = 'groove' | 'bounce' | 'sway' | 'hype'
 type Avatar = { skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
 type Position = { x:number; z:number; dance:Dance }
-type Remote = { id:string; position:Position }
+type Remote = { id:string; position:Position; avatar:Avatar }
 const defaults: Avatar = { skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
 const skin: Record<Avatar['skin'],string> = { warm:'#a96745', deep:'#613b2d', light:'#e0ad83', tan:'#c9875c' }
 const clothes: Record<Avatar['outfit'],string> = { neon:'#c7ff38', street:'#6478ff', vip:'#e7bd75', classic:'#d5d9e2' }
@@ -33,7 +33,10 @@ function Dancer({ position, avatar, me=false }: { position:Position; avatar:Avat
  })
  return <group ref={ref} position={[position.x,0,position.z]}>
   <mesh position={[0,1.55,0]} castShadow><sphereGeometry args={[.27,16,16]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
-  <mesh position={[0,1.79,-.02]}><sphereGeometry args={[.28,14,10,0,Math.PI*2,0,Math.PI*.5]}/><meshStandardMaterial color="#20151f"/></mesh>
+  {avatar.hair === 'curly' && <group>{[-.16,-.05,.06,.17].map((x,i)=><mesh key={i} position={[x,1.78+(i%2)*.04,-.03]}><sphereGeometry args={[.13,10,10]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
+  {avatar.hair === 'fade' && <mesh position={[0,1.78,-.02]}><sphereGeometry args={[.25,14,10,0,Math.PI*2,0,Math.PI*.45]}/><meshStandardMaterial color="#20151f"/></mesh>}
+  {avatar.hair === 'short' && <mesh position={[0,1.75,-.02]}><sphereGeometry args={[.25,14,10,0,Math.PI*2,0,Math.PI*.32]}/><meshStandardMaterial color="#20151f"/></mesh>}
+  {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.035,.34,4,6]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
   <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.29,.55,4,8]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
   <mesh position={[-.37,1.03,0]} rotation={[0,0,-.35]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
   <mesh position={[.37,1.03,0]} rotation={[0,0,.35]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
@@ -43,7 +46,7 @@ function Dancer({ position, avatar, me=false }: { position:Position; avatar:Avat
  </group>
 }
 
-function Venue({ position, remotes, avatar, high }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean }) {
+function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string }) {
  return <>
   <color attach="background" args={['#080711']}/>
   <fog attach="fog" args={['#080711',14,28]}/>
@@ -65,14 +68,18 @@ function Venue({ position, remotes, avatar, high }: { position:Position; remotes
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[-5.2,.65,-1.8]}><boxGeometry args={[2.4,1.3,1.2]}/><meshStandardMaterial color="#2a223d"/></mesh>
   <mesh position={[5.2,.65,-1.8]}><boxGeometry args={[2.4,1.3,1.2]}/><meshStandardMaterial color="#2a223d"/></mesh>
+  {roomType === 'bar' && <group position={[0,0,-2]}><mesh position={[0,.7,-1]}><boxGeometry args={[5,.9,1.1]}/><meshStandardMaterial color="#5a3145" metalness={.3}/></mesh>{[-1.7,-.6,.6,1.7].map(x=><mesh key={x} position={[x,.45,.1]}><cylinderGeometry args={[.22,.22,.9,12]}/><meshStandardMaterial color="#c7ff38" metalness={.55}/></mesh>)}</group>}
+  {roomType === 'lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.38,0]}><boxGeometry args={[2.7,.7,1.2]}/><meshStandardMaterial color="#34304e"/></mesh><mesh position={[0,.85,-.3]}><boxGeometry args={[2.7,.25,.45]}/><meshStandardMaterial color="#6a4a86"/></mesh></group>)}</group>}
+  {roomType === 'vip_lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.45,0]}><boxGeometry args={[3,.85,1.4]}/><meshStandardMaterial color="#7b5630" metalness={.4}/></mesh><mesh position={[0,1,-.45]}><boxGeometry args={[3,.25,.35]}/><meshStandardMaterial color="#e7bd75" emissive="#8a632d" emissiveIntensity={.35}/></mesh></group>)}</group>}
+  {roomType === 'dj_booth' && <group position={[0,0,-3.5]}><mesh position={[0,1.8,-1]}><boxGeometry args={[6,.12,.12]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={3}/></mesh><mesh position={[0,2.3,-1]}><boxGeometry args={[2.8,.7,.15]}/><meshStandardMaterial color="#1b1727" emissive="#8c3cff" emissiveIntensity={.5}/></mesh></group>}
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me/>
-  {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={{...defaults,dance:m.position.dance}}/>)}
+  {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   <OrbitControls target={[0,1,-.4]} enablePan={false} minDistance={8} maxDistance={17} minPolarAngle={.65} maxPolarAngle={1.35}/>
  </>
 }
 
-export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{roomId:string;userId:string;displayName:string;initialConfig:Json|null}) {
+export default function Room3DEngine({roomId,userId,displayName,initialConfig,roomType}:{roomId:string;userId:string;displayName:string;initialConfig:Json|null;roomType:string}) {
  const [avatar,setAvatar]=useState<Avatar>(()=>({...defaults,...(initialConfig && typeof initialConfig==='object' && !Array.isArray(initialConfig)?initialConfig:{})}) as Avatar)
  const [position,setPosition]=useState<Position>({x:0,z:2.2,dance:defaults.dance})
  const [remotes,setRemotes]=useState<Remote[]>([])
@@ -105,7 +112,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{
    setRemotes(list)
   }
   channel.on('presence',{event:'sync'},sync).subscribe(state=>{
-   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance})}
+   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit})}
    else if(state==='CHANNEL_ERROR'||state==='TIMED_OUT')setStatus('Reconnecting…')
    else if(state==='CLOSED')setStatus('Disconnected')
   })
@@ -123,7 +130,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{
   const {error}=await supabase.from('profiles').update({avatar_config:avatar as unknown as Json,updated_at:new Date().toISOString()}).eq('id',userId)
   setSaving(false);setStatus(error?'Avatar save failed':'Avatar saved')
  }
- function dance(d:Dance){const next={...position,dance:d};setPosition(next);setAvatar(a=>({...a,dance:d}));publish(next)}
+ function dance(d:Dance){setPosition(current=>({...current,dance:d}));setAvatar(a=>({...a,dance:d}))}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
    <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Real-time 3D venue</p><h2 className="mt-1 text-xl font-black">The dancefloor</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
@@ -131,7 +138,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{
   </header>
   <div className="relative h-[420px] sm:h-[540px]">
    <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,7.5,12.5],fov:48}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
-    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'}/>
+    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType={roomType}/>
    </Canvas>
    <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">WASD / arrows to move · drag to look</div>
    <div className="absolute bottom-4 right-4 grid grid-cols-3 gap-1.5 sm:hidden">
