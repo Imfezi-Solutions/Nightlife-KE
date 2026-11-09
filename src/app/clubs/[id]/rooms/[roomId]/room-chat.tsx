@@ -74,7 +74,7 @@ export default function RoomChat({
         ) : messages.map((message) => (
           <article key={message.id} className={`max-w-[88%] rounded-2xl px-4 py-3 ${message.author_id === currentUserId ? 'ml-auto bg-lime-300/10' : 'bg-white/5'}`}>
             <p className="mb-1 text-[11px] font-semibold text-lime-200">
-              {message.author_id === currentUserId ? 'You' : `Member · ${message.author_id.slice(0, 6)}`}
+              {message.author_id === currentUserId ? 'You' : 'Club member'}
             </p>
             <p className="whitespace-pre-wrap break-words text-sm text-zinc-100">{message.body}</p>
             <time className="mt-2 block text-right text-[10px] text-zinc-500" dateTime={message.created_at}>
