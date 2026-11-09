@@ -43,7 +43,6 @@ export default function RoomChat({
     })
 
     const syncPresence = () => {
-      const entries = Object.values(channel.presenceState<RoomPresence>()).flat()
       // Presence metadata is client-supplied. Never render it as a verified identity.
       const connections = Array.from(
         new Set(Object.keys(channel.presenceState<RoomPresence>())),
