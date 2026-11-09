@@ -9,7 +9,7 @@ A mobile-first Kenyan virtual nightlife platform by Imfezi Solutions.
 - Tailwind CSS and PWA manifest foundation
 
 ## Local setup
-1. Use Node.js 20.9+.
+1. Use Node.js 22 or newer.
 2. Copy `.env.example` to `.env.local`.
 3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` using the Nightlife KE Supabase project's Connect panel.
 4. Run `npm install`, then `npm run dev`.
@@ -28,7 +28,13 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - Transactional club creation: creator becomes owner and five standard rooms are created atomically
 - Public and invite-only clubs, with cryptographically random invitation codes stored as SHA-256 hashes
 - Private invitation preview and server-side joining with age checks and serialized capacity enforcement (2–30 members)
-- Club pages that only show room content to members
+- Club pages that only show room content to verified members
+- Live room chat using Supabase Realtime Postgres Changes
+- Private room Presence with a live member count and member display names
+- Club roster visible only to verified club members
+- Owner/moderator member removal with role-based rules
+- Member reports with reason categories and moderator review states
+- Database-backed message length and rate limits
 - Generated Supabase TypeScript database types
 - Cookie-based Supabase session refresh
 - PWA manifest starter
@@ -36,13 +42,14 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 
 ## Not production-enabled
 - **Age verification:** No provider is integrated. Google OAuth is not proof of age. Do not mark users verified manually or allow club entry until a real provider and signed server-side webhook are implemented.
-- **Club create/join:** Core transactional flows are implemented. Still needs end-to-end testing with verified test accounts, invitation abuse/rate limiting, owner moderation controls and membership management.
-- **Realtime chat/presence:** Database publication is enabled; subscriptions, moderation and rate limits remain to be implemented.
+- **Club create/join:** Core transactional flows are implemented. Still needs end-to-end testing with verified test accounts and invitation abuse/rate-limit review.
+- **Realtime privacy setting:** In Supabase Dashboard → Project Settings → Realtime Settings, turn OFF **Allow public access to channels** before testing private room Presence in production. The client uses private channels and RLS authorization policies are installed, but this dashboard toggle has not been changed by this repository.
+- **Realtime chat/presence:** Code and database policies are committed/applied. Multi-account browser testing is still required; Presence shows who is connected but is not a reservation/seat-lock system.
 - **3D rooms/avatars/DJ audio:** Rendering and audio architecture, device testing and performance budgets remain open.
 - **Music:** Commercial music requires appropriate rights/licensing.
 - **Payments/credits:** PayHero credentials, callback validation, idempotency and ledger are not connected.
-- **Safety operations:** Reporting, blocking, spam controls and retention policies are required before public launch.
+- **Safety operations:** Basic club reporting and moderator removal/review tools exist. Platform-wide blocking, escalation, moderator audit trails, spam controls and retention policies are still required before public launch.
 
-The Supabase database was provisioned separately. Club-engine SQL has been applied to the live project and verified with a fail-closed test for unverified users, but the live SQL changes are not yet represented as a versioned Supabase CLI migration in this repository. Generate and review migrations before relying on reproducible environments.
+The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live SQL changes are not yet represented as a versioned Supabase CLI migration in this repository. Generate and review migrations before relying on reproducible environments.
 
-A GitHub Actions workflow now runs dependency installation, TypeScript checking and a production build on pushes and pull requests. Check the Actions tab for the first run result.
+A GitHub Actions workflow runs dependency installation, TypeScript checking and a production build on pushes and pull requests. The workflow now uses Node.js 22 to match the pinned Supabase client. Check the Actions tab for the latest result.
