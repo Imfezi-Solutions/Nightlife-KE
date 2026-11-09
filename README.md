@@ -6,7 +6,7 @@ A mobile-first Kenyan virtual nightlife platform by Imfezi Solutions.
 - Next.js 15 App Router + TypeScript
 - Supabase Auth, Postgres, Storage and Realtime
 - `@supabase/ssr` cookie-based sessions
-- Tailwind CSS and PWA manifest foundation
+- Tailwind CSS, PWA manifest foundation, Three.js and React Three Fiber
 
 ## Local setup
 1. Use Node.js 22 or newer.
@@ -30,14 +30,14 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - Private invitation preview and server-side joining with age checks and serialized capacity enforcement (2–30 members)
 - Club pages that only show room content to verified members
 - Live room chat using Supabase Realtime Postgres Changes
-- Private room Presence with a live member count and member display names
+- Private room Presence for chat participants; separate private movement Presence for avatar coordinates
 - Club roster visible only to verified club members
 - Owner/moderator member removal with role-based rules
 - Member reports with reason categories and moderator review states
 - Database-backed message length and rate limits
 - Generated Supabase TypeScript database types
 - Cookie-based Supabase session refresh
-- PWA manifest starter
+- PWA manifest starter (service worker, installability checks and offline strategy still required)
 - Discovery displays age verification state and treats unverified accounts as restricted
 
 ## Not production-enabled
@@ -45,12 +45,12 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - **Club create/join:** Core transactional flows are implemented. Still needs end-to-end testing with verified test accounts and invitation abuse/rate-limit review.
 - **Realtime privacy setting:** In Supabase Dashboard → Project Settings → Realtime Settings, turn OFF **Allow public access to channels** before testing private room Presence in production. The client uses private channels and RLS authorization policies are installed, but this dashboard toggle has not been changed by this repository.
 - **Realtime chat/presence:** Code and database policies are committed/applied. Multi-account browser testing is still required; Presence shows who is connected but is not a reservation/seat-lock system.
-- **3D rooms/avatars/DJ audio:** Rendering and audio architecture, device testing and performance budgets remain open.
+- **3D rooms/avatars:** A Three.js / React Three Fiber nightclub scene is now implemented with low-data/high-quality rendering, keyboard and touch movement, dance styles, and private Realtime avatar position sharing. It still needs real multi-account browser testing, authoritative movement validation, collision refinement, optimized character assets and device profiling.
 - **Music:** Commercial music requires appropriate rights/licensing.
 - **Payments/credits:** PayHero credentials, callback validation, idempotency and ledger are not connected.
 - **Safety operations:** Basic club reporting and moderator removal/review tools exist. Platform-wide blocking, escalation, moderator audit trails, spam controls and retention policies are still required before public launch.
 
-The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live SQL changes are not yet represented as a versioned Supabase CLI migration in this repository. Generate and review migrations before relying on reproducible environments.
+The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live schema is not yet fully reproducible from a clean Supabase CLI database: the repository still needs a complete baseline migration for the pre-existing core schema and earlier DJ migrations. The newest room-movement authorization migration is recorded in `supabase/migrations/`, but do not treat that single file as a complete database bootstrap.
 
 A GitHub Actions workflow runs dependency installation, TypeScript checking and a production build on pushes and pull requests. The workflow now uses Node.js 22 to match the pinned Supabase client. Check the Actions tab for the latest result.
 
@@ -71,6 +71,14 @@ Platform DJ grants are currently managed by trusted database administration, not
 
 ## 3D nightclub and avatars
 
-The room page now includes a responsive CSS 3D-style nightclub scene with a DJ platform, animated dancefloor lighting, stylized character previews, and reduced-motion support. Members can customize skin tone, hair, outfit and dance style. Their selected configuration is saved to their own profile in `avatar_config`, constrained by a database check so clients cannot store arbitrary avatar properties. The schema change is recorded in `supabase/changes/avatar_customization.sql`.
+The room now renders a genuine WebGL scene with Three.js through React Three Fiber. It includes a nightclub floor, DJ stage, lounge props, neon lighting, orbit camera controls, and low-data/high-quality rendering options. Keyboard and touch controls move the local avatar within clamped scene bounds. Dance styles animate the avatar, and a dedicated private Supabase Realtime presence topic shares movement coordinates with verified members in the same room. The movement topic has separate Realtime RLS policies and is recorded in `supabase/migrations/20261109175523_room_movement_presence_authorization.sql`.
 
-This is the first visual prototype, not a full WebGL/3D engine. The three background dancers are illustrative scene characters, not connected live users. Networked user avatars, movement controls, collision/room navigation, and optimized 3D assets remain future work.
+Avatar appearance choices are saved to the user's own `profiles.avatar_config` field and remain constrained by the database check in `supabase/changes/avatar_customization.sql`. Remote movement payloads are treated as untrusted display data and clamped by receiving clients; this is not yet an authoritative anti-cheat movement service. Real browser multi-user tests, collision refinement, optimized GLB character assets, low-end Android profiling and the remaining room types/interactions are still required.
+
+
+## Current development milestone
+
+- Real-time WebGL nightclub scene and avatar movement code committed to `main`.
+- Room entry now checks for a current verified age-verification record in addition to club membership. Until a provider is integrated, unverified users remain blocked.
+- A separate private movement Presence topic is protected by database RLS and verified-room-membership checks.
+- CI must be checked on the latest commit; do not assume it passes until the GitHub Actions run completes.
