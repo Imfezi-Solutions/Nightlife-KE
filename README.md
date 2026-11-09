@@ -53,3 +53,17 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live SQL changes are not yet represented as a versioned Supabase CLI migration in this repository. Generate and review migrations before relying on reproducible environments.
 
 A GitHub Actions workflow runs dependency installation, TypeScript checking and a production build on pushes and pull requests. The workflow now uses Node.js 22 to match the pinned Supabase client. Check the Actions tab for the latest result.
+
+
+## DJ and music foundation
+
+The club-room page includes a DJ console for club owners, moderators, and members with the `dj` role. Platform DJ eligibility is separately stored in `public.platform_djs`; a platform DJ must also be a member of the room's club. The Supabase schema, RLS policies, and Realtime publication changes are recorded in `supabase/changes/dj_music.sql`.
+
+- Queue submissions require a source category and rights-evidence reference and remain `pending`.
+- Only rights-approved queue entries are visible in the playable queue.
+- Approval is intentionally an administrative rights-review operation; the app does not automatically approve a track just because a user supplied a license reference.
+- Playback session state (selected approved track, play/pause/stop, timestamp and position metadata) synchronizes through Supabase Realtime.
+- The UI does **not** stream audio. A licensed music provider or verified original/public-domain asset delivery integration, plus its contractual permissions, is required before audio playback can be enabled.
+- No commercial music catalog, scraping, direct media URLs, or unlicensed audio source is integrated.
+
+Platform DJ grants are currently managed by trusted database administration, not a public self-service control. Do not grant platform DJ status to users through client-side writes.
