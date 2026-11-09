@@ -24,7 +24,7 @@ export async function createClubAction(formData: FormData) {
   const { data, error } = await supabase.rpc('create_club', {
     p_name: parsed.data.name,
     p_county_id: parsed.data.county_id,
-    p_description: parsed.data.description || null,
+    p_description: parsed.data.description || undefined,
     p_visibility: parsed.data.visibility,
     p_capacity: parsed.data.capacity,
   })
@@ -57,7 +57,7 @@ export async function joinClubAction(formData: FormData) {
 
   const { error } = await supabase.rpc('join_club', {
     p_club_id: parsed.data.club_id,
-    p_invitation_code: parsed.data.invitation_code || null,
+    p_invitation_code: parsed.data.invitation_code || undefined,
   })
   if (error) {
     const code = error.code === '42501' ? 'verification' : 'join'
