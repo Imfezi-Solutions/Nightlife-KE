@@ -1,0 +1,10 @@
+{
+  "name": "Nightlife KE",
+  "short_name": "Nightlife KE",
+  "description": "Your night, your people.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "icons": []
+}
