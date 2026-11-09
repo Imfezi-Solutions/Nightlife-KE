@@ -5,7 +5,10 @@ import {
   joinClubAction,
   removeClubMemberAction,
   reportClubMemberAction,
-  reviewClubReportAction,\n  updateClubSettingsAction,\n  rotateClubInvitationAction,\n  setClubMemberRoleAction,
+  reviewClubReportAction,
+  updateClubSettingsAction,
+  rotateClubInvitationAction,
+  setClubMemberRoleAction,
 } from '../actions'
 
 type ClubSummary = {
@@ -107,7 +110,10 @@ export default async function ClubPage({
         )}
         {query.notice === 'member_removed' && <p className="mt-4 text-sm text-lime-200">Member removed from this club.</p>}
         {query.notice === 'report_sent' && <p className="mt-4 text-sm text-lime-200">Your report has been submitted to the club moderators.</p>}
-        {query.notice === 'report_updated' && <p className="mt-4 text-sm text-lime-200">Report status updated.</p>}\n        {query.notice === 'settings_saved' && <p className="mt-4 text-sm text-lime-200">Club settings saved.</p>}\n        {query.notice === 'invite_rotated' && <p className="mt-4 text-sm text-lime-200">A new invitation code was generated. The previous code is no longer valid.</p>}\n        {query.notice === 'role_updated' && <p className="mt-4 text-sm text-lime-200">Member role updated.</p>}
+        {query.notice === 'report_updated' && <p className="mt-4 text-sm text-lime-200">Report status updated.</p>}
+        {query.notice === 'settings_saved' && <p className="mt-4 text-sm text-lime-200">Club settings saved.</p>}
+        {query.notice === 'invite_rotated' && <p className="mt-4 text-sm text-lime-200">A new invitation code was generated. The previous code is no longer valid.</p>}
+        {query.notice === 'role_updated' && <p className="mt-4 text-sm text-lime-200">Member role updated.</p>}
         {query.error && <p className="mt-4 text-sm text-red-300">That action could not be completed. Check your permissions and try again.</p>}
       </section>
 
