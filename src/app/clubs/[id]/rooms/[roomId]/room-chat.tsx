@@ -60,7 +60,7 @@ export default function RoomChat({
           return [...current, incoming].slice(-100)
         })
       })
-      .on('presence', { event: 'sync' }, sync)
+      .on('presence', { event: 'sync' }, syncPresence)
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setConnection('Live')
