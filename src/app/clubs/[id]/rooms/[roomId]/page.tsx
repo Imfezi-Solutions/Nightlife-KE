@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import RoomChat from './room-chat'
 import DjConsole from './dj-console'
+import Room3DScene from './room-3d-scene'
 import { sendRoomMessageAction } from '../../../actions'
 import { createClient } from '@/lib/supabase/server'
 
@@ -35,7 +36,7 @@ export default async function ClubRoomPage({
 
   if (!room || !membership) notFound()
 
-  const [{ data: club }, { data: messages }, { data: musicQueue }, { data: musicSession }, { data: platformDj }] = await Promise.all([
+  const [{ data: club }, { data: messages }, { data: musicQueue }, { data: musicSession }, { data: platformDj }, { data: profile }] = await Promise.all([
     supabase.from('clubs').select('name').eq('id', id).maybeSingle(),
     supabase.from('chat_messages')
       .select('id,club_id,room_id,author_id,body,created_at')
@@ -46,6 +47,7 @@ export default async function ClubRoomPage({
     supabase.from('dj_queue').select('*').eq('room_id', roomId).eq('rights_status', 'approved').order('position').order('created_at'),
     supabase.from('dj_sessions').select('*').eq('room_id', roomId).maybeSingle(),
     supabase.from('platform_djs').select('user_id').eq('user_id', userId).eq('is_active', true).maybeSingle(),
+    supabase.from('profiles').select('display_name,avatar_config').eq('id', userId).maybeSingle(),
   ])
 
   return (
