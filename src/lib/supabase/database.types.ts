@@ -637,7 +637,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_config: Json | null
+          avatar_url: string | null
+          bio: string | null
+          county_id: number | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_config?: Json | null
+          avatar_url?: string | null
+          bio?: string | null
+          county_id?: number | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_config?: Json | null
+          avatar_url?: string | null
+          bio?: string | null
+          county_id?: number | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_county_id_fkey"
+            columns: ["county_id"]
+            isOneToOne: false
+            referencedRelation: "counties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_club: {
