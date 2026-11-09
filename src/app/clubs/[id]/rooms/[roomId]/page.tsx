@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import RoomChat from './room-chat'
+import DjConsole from './dj-console'
 import { sendRoomMessageAction } from '../../../actions'
 import { createClient } from '@/lib/supabase/server'
 
@@ -34,7 +35,7 @@ export default async function ClubRoomPage({
 
   if (!room || !membership) notFound()
 
-  const [{ data: club }, { data: messages }] = await Promise.all([
+  const [{ data: club }, { data: messages }, { data: musicQueue }, { data: musicSession }, { data: platformDj }] = await Promise.all([
     supabase.from('clubs').select('name').eq('id', id).maybeSingle(),
     supabase.from('chat_messages')
       .select('id,club_id,room_id,author_id,body,created_at')
@@ -42,6 +43,9 @@ export default async function ClubRoomPage({
       .eq('room_id', roomId)
       .order('created_at', { ascending: true })
       .limit(100),
+    supabase.from('dj_queue').select('*').eq('room_id', roomId).eq('rights_status', 'approved').order('position').order('created_at'),
+    supabase.from('dj_sessions').select('*').eq('room_id', roomId).maybeSingle(),
+    supabase.from('platform_djs').select('user_id').eq('user_id', userId).eq('is_active', true).maybeSingle(),
   ])
 
   return (
@@ -62,6 +66,14 @@ export default async function ClubRoomPage({
         currentUserId={userId}
         capacity={room.capacity}
         initialMessages={messages ?? []}
+      />
+
+      <DjConsole
+        roomId={roomId}
+        currentUserId={userId}
+        canControl={['owner', 'moderator', 'dj'].includes(membership.role) || Boolean(platformDj)}
+        initialQueue={musicQueue ?? []}
+        initialSession={musicSession ?? null}
       />
 
       <form action={sendRoomMessageAction} className="glass mt-4 rounded-2xl p-3 sm:p-4">
