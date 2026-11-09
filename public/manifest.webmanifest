@@ -3,8 +3,17 @@
   "short_name": "Nightlife KE",
   "description": "Your night, your people.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#08090d",
   "theme_color": "#08090d",
-  "icons": []
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/nightlife-ke.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
