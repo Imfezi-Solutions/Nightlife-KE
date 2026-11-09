@@ -31,11 +31,11 @@ export default function RoomChat({
 }) {
   const [messages, setMessages] = useState(initialMessages)
   const [connection, setConnection] = useState('Connecting…')
-  const [presentMembers, setPresentMembers] = useState<RoomPresence[]>([])
+  const [presentMembers, setPresentMembers] = useState<RoomPresence[]>([])\n  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase.channel(`club-room:${roomId}`, {
+    void supabase.from('user_blocks').select('blocked_user_id').eq('blocker_id', currentUserId).then(({ data }) => {\n      setBlockedIds(new Set((data ?? []).map((row) => row.blocked_user_id)))\n    })\n    const channel = supabase.channel(`club-room:${roomId}`, {
       config: {
         private: true,
         presence: { key: currentUserId },
@@ -90,7 +90,7 @@ export default function RoomChat({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-bold">Room chat</h2>
-            <p className="text-xs text-zinc-500">Messages are visible to club members</p>
+            <p className="text-xs text-zinc-500">Messages are visible to club members · blocked accounts are hidden for you</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs ${connection === 'Live' ? 'bg-lime-300/10 text-lime-200' : 'bg-white/5 text-zinc-400'}`}>
             {connection}
@@ -111,15 +111,15 @@ export default function RoomChat({
         </div>
       </header>
       <div className="flex-1 space-y-3 overflow-y-auto p-5" aria-live="polite">
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <p className="py-16 text-center text-sm text-zinc-500">It’s quiet in here. Start the conversation.</p>
-        ) : messages.map((message) => (
+        ) : visibleMessages.map((message) => (
           <article key={message.id} className={`max-w-[88%] rounded-2xl px-4 py-3 ${message.author_id === currentUserId ? 'ml-auto bg-lime-300/10' : 'bg-white/5'}`}>
             <p className="mb-1 text-[11px] font-semibold text-lime-200">
               {message.author_id === currentUserId ? 'You' : 'Club member'}
             </p>
             <p className="whitespace-pre-wrap break-words text-sm text-zinc-100">{message.body}</p>
-            <time className="mt-2 block text-right text-[10px] text-zinc-500" dateTime={message.created_at}>
+            {message.author_id !== currentUserId && <button onClick={() => void blockMember(message.author_id)} disabled={blockedIds.has(message.author_id)} className="mt-2 text-[10px] font-semibold text-red-200 disabled:opacity-40">{blockedIds.has(message.author_id) ? 'Blocked' : 'Block member'}</button>}\n            <time className="mt-2 block text-right text-[10px] text-zinc-500" dateTime={message.created_at}>
               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </time>
           </article>
