@@ -105,3 +105,80 @@ export async function sendRoomMessageAction(formData: FormData) {
   revalidatePath(`/clubs/${parsed.data.club_id}/rooms/${parsed.data.room_id}`)
   redirect(`/clubs/${parsed.data.club_id}/rooms/${parsed.data.room_id}`)
 }
+
+
+const removeMemberSchema = z.object({
+  club_id: z.string().uuid(),
+  target_user_id: z.string().uuid(),
+})
+
+export async function removeClubMemberAction(formData: FormData) {
+  const parsed = removeMemberSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=moderation')
+
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  if (!claims?.claims?.sub) redirect('/login')
+
+  const { error } = await supabase.from('club_members')
+    .delete()
+    .eq('club_id', parsed.data.club_id)
+    .eq('user_id', parsed.data.target_user_id)
+
+  if (error) redirect(`/clubs/${parsed.data.club_id}?error=remove`)
+  revalidatePath(`/clubs/${parsed.data.club_id}`)
+  redirect(`/clubs/${parsed.data.club_id}?notice=member_removed`)
+}
+
+const reportMemberSchema = z.object({
+  club_id: z.string().uuid(),
+  reported_user_id: z.string().uuid(),
+  reason: z.enum(['harassment','hate_speech','sexual_content','spam','impersonation','underage_concern','other']),
+  details: z.string().trim().max(1000).optional(),
+})
+
+export async function reportClubMemberAction(formData: FormData) {
+  const parsed = reportMemberSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=report')
+
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  const reporterId = claims?.claims?.sub
+  if (!reporterId) redirect('/login')
+
+  const { error } = await supabase.from('club_reports').insert({
+    club_id: parsed.data.club_id,
+    reporter_id: reporterId,
+    reported_user_id: parsed.data.reported_user_id,
+    reason: parsed.data.reason,
+    details: parsed.data.details || null,
+  })
+
+  if (error) redirect(`/clubs/${parsed.data.club_id}?error=report`)
+  redirect(`/clubs/${parsed.data.club_id}?notice=report_sent`)
+}
+
+const reviewReportSchema = z.object({
+  club_id: z.string().uuid(),
+  report_id: z.string().uuid(),
+  status: z.enum(['reviewing','resolved','dismissed']),
+})
+
+export async function reviewClubReportAction(formData: FormData) {
+  const parsed = reviewReportSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=moderation')
+
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  const reviewerId = claims?.claims?.sub
+  if (!reviewerId) redirect('/login')
+
+  const { error } = await supabase.from('club_reports')
+    .update({ status: parsed.data.status, reviewed_by: reviewerId })
+    .eq('id', parsed.data.report_id)
+    .eq('club_id', parsed.data.club_id)
+
+  if (error) redirect(`/clubs/${parsed.data.club_id}?error=review`)
+  revalidatePath(`/clubs/${parsed.data.club_id}`)
+  redirect(`/clubs/${parsed.data.club_id}?notice=report_updated`)
+}
