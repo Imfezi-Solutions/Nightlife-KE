@@ -135,4 +135,4 @@ Owners can edit club name, description, visibility and capacity (2–30, never b
 
 ### Profile privacy
 
-The base `profiles` table is now readable only by its owner. Other signed-in members use the restricted `public_profiles` view, which exposes only the fields needed for club member cards and avatar presentation; it deliberately omits gender and any private account data. Profile edits remain owner-only.
+The base `profiles` table is now readable only by its owner. Other signed-in members use the restricted `get_public_profiles` RPC, which returns only the fields needed for club member cards and avatar presentation; it deliberately omits gender and any private account data. The underlying `profiles` table is owner-readable only. Profile edits remain owner-only.
