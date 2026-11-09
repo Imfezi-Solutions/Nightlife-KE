@@ -126,3 +126,8 @@ Licensed-provider tracks can be submitted as metadata, but actual playback requi
 ### User blocking
 
 Members can block another room participant from a chat message. The block list is private to the blocking user and blocked accounts' messages are filtered from that user's room chat. This is a client-side visibility control; it does not yet suspend the blocked account or prevent that account from participating in the room for other members.
+
+
+### Club owner controls
+
+Owners can edit club name, description, visibility and capacity (2–30, never below current membership), rotate private invitation codes, and assign member/moderator/DJ roles. Moderators can remove ordinary members only; owners can remove non-owners. These operations are enforced by database RPCs rather than trusting form controls, and role changes, invitation rotation, settings changes and removals are written to the restricted audit log.
