@@ -666,6 +666,14 @@ export type Database = {
         Args: { p_actor_id: string; p_status: string; p_track_id: string }
         Returns: boolean
       }
+      rotate_club_invitation_code: {
+        Args: { p_club_id: string }
+        Returns: string
+      }
+      set_club_member_role: {
+        Args: { p_club_id: string; p_role: string; p_target_user_id: string }
+        Returns: boolean
+      }
       settle_payhero_payment: {
         Args: {
           p_amount_kes: number
@@ -673,6 +681,16 @@ export type Database = {
           p_mpesa_receipt: string
           p_payhero_reference: string
           p_provider_payload: Json
+        }
+        Returns: boolean
+      }
+      update_club_settings: {
+        Args: {
+          p_capacity: number
+          p_club_id: string
+          p_description: string
+          p_name: string
+          p_visibility: string
         }
         Returns: boolean
       }
