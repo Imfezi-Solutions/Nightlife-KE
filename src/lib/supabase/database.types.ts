@@ -332,6 +332,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "dj_sessions_current_track_same_room_fkey"
+            columns: ["current_track_id", "room_id"]
+            isOneToOne: false
+            referencedRelation: "dj_queue"
+            referencedColumns: ["id", "room_id"]
+          },
+          {
             foreignKeyName: "dj_sessions_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: true
@@ -360,6 +367,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_config: Json
           avatar_url: string | null
           bio: string | null
           county_id: number | null
@@ -371,6 +379,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          avatar_config?: Json
           avatar_url?: string | null
           bio?: string | null
           county_id?: number | null
@@ -382,6 +391,7 @@ export type Database = {
           username: string
         }
         Update: {
+          avatar_config?: Json
           avatar_url?: string | null
           bio?: string | null
           county_id?: number | null
