@@ -19,7 +19,7 @@ export default async function ClubPage({ params, searchParams }: { params: Promi
   let club: ClubSummary | null = visibleClub as ClubSummary | null
   if (!club && query.code) {
     const { data } = await supabase.rpc('preview_invite_club', { p_club_id: id, p_invitation_code: query.code })
-    if (data) club = data as ClubSummary
+    if (data) club = data as unknown as ClubSummary
   }
   if (!club) notFound()
 
