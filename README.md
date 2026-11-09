@@ -67,3 +67,10 @@ The club-room page includes a DJ console for club owners, moderators, and member
 - No commercial music catalog, scraping, direct media URLs, or unlicensed audio source is integrated.
 
 Platform DJ grants are currently managed by trusted database administration, not a public self-service control. Do not grant platform DJ status to users through client-side writes.
+
+
+## 3D nightclub and avatars
+
+The room page now includes a responsive CSS 3D-style nightclub scene with a DJ platform, animated dancefloor lighting, stylized character previews, and reduced-motion support. Members can customize skin tone, hair, outfit and dance style. Their selected configuration is saved to their own profile in `avatar_config`, constrained by a database check so clients cannot store arbitrary avatar properties. The schema change is recorded in `supabase/changes/avatar_customization.sql`.
+
+This is the first visual prototype, not a full WebGL/3D engine. The three background dancers are illustrative scene characters, not connected live users. Networked user avatars, movement controls, collision/room navigation, and optimized 3D assets remain future work.
