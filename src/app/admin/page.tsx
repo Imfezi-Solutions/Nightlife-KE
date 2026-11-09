@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import ReportReview from './report-review'
 import MusicReview from './music-review'
+import RoleManagement from './role-management'
 
 export default async function AdminPage(){
  const supabase=await createClient()
@@ -35,6 +36,7 @@ export default async function AdminPage(){
  return <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-6">
   <header className="flex flex-wrap items-center justify-between gap-4"><div><Link href="/discover" className="text-sm text-zinc-400 hover:text-white">← Back to discovery</Link><p className="mt-6 text-xs font-black uppercase tracking-[.25em] text-lime-300">Nightlife KE operations</p><h1 className="mt-2 text-4xl font-black">Admin dashboard</h1><p className="mt-2 text-sm text-zinc-400">Signed in with role: <span className="font-semibold capitalize text-lime-200">{role.replaceAll('_',' ')}</span></p></div><span className="rounded-xl border border-white/10 px-4 py-3 text-xs text-zinc-400">Administrative actions are audited</span></header>
   <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{stats.map(([label,value])=><article key={label} className="glass rounded-2xl p-5"><p className="text-xs text-zinc-500">{label}</p><p className="mt-2 text-3xl font-black tabular-nums">{Number(value).toLocaleString()}</p></article>)}</section>
+  {role==='super_admin'&&<section className="mt-10"><h2 className="text-2xl font-black">Platform access</h2><p className="mt-2 text-sm text-zinc-400">Assign least-privilege roles to existing verified accounts.</p><RoleManagement/></section>}
   {canReview&&<section className="mt-10"><h2 className="mb-4 text-2xl font-black">Moderation queue</h2><ReportReview reports={reports??[]}/></section>}
   {canReviewMusic&&<section className="mt-10"><h2 className="mb-4 text-2xl font-black">Music rights review</h2><MusicReview tracks={pendingTracks??[]}/></section>}
   {canFinance&&<section className="mt-10"><h2 className="mb-4 text-2xl font-black">Payment review</h2><div className="overflow-hidden rounded-2xl border border-white/10">{!payments?.length?<p className="p-5 text-sm text-zinc-500">No payment intents yet.</p>:payments.map(payment=><article key={payment.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 p-4 last:border-0"><div><p className="font-semibold">KES {payment.amount_kes.toLocaleString()} · {payment.credits.toLocaleString()} credits</p><p className="mt-1 text-xs text-zinc-500">{payment.external_reference} · {new Date(payment.created_at).toLocaleString()}</p>{payment.mpesa_receipt&&<p className="mt-1 text-xs text-zinc-400">M-Pesa receipt: {payment.mpesa_receipt}</p>}</div><span className="rounded-full bg-white/5 px-3 py-1 text-xs capitalize text-zinc-300">{payment.status}</span></article>)}</div></section>}
