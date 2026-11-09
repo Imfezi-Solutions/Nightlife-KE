@@ -37,7 +37,7 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - Database-backed message length and rate limits
 - Generated Supabase TypeScript database types
 - Cookie-based Supabase session refresh
-- PWA manifest starter (service worker, installability checks and offline strategy still required)
+- Installable PWA foundation: web app manifest, SVG app icon, service-worker registration and network-first offline navigation fallback (service worker, installability checks and offline strategy still required)
 - Discovery displays age verification state and treats unverified accounts as restricted
 
 ## Not production-enabled
@@ -82,3 +82,8 @@ Avatar appearance choices are saved to the user's own `profiles.avatar_config` f
 - Room entry now checks for a current verified age-verification record in addition to club membership. Until a provider is integrated, unverified users remain blocked.
 - A separate private movement Presence topic is protected by database RLS and verified-room-membership checks.
 - CI must be checked on the latest commit; do not assume it passes until the GitHub Actions run completes.
+
+
+### PWA behaviour
+
+The service worker caches only the static `/offline` fallback. It does not cache authenticated navigation, API responses, payment information or profile data. Navigation is network-first and displays the offline page when the network is unavailable. The manifest and SVG icon are present; test installation in supported browsers and verify the icon presentation on target Android devices.
