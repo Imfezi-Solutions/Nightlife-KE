@@ -43,7 +43,7 @@ export default async function ClubPage({ params, searchParams }: { params: Promi
       {isMember && <p className="mt-6 inline-flex rounded-full bg-lime-300/10 px-4 py-2 text-sm font-semibold text-lime-200">{isOwner ? 'You own this club' : 'You are a club member'}</p>}
     </section>
     <section className="mt-10"><h2 className="text-2xl font-black">Explore the spaces</h2><p className="mt-2 text-sm text-zinc-400">Join the club to unlock its rooms. Interactive 3D spaces are the next development layer.</p>
-      {isMember ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{(rooms ?? []).map(room => <article key={room.id} className="glass rounded-2xl p-6"><p className="text-xs uppercase tracking-wider text-lime-300">{room.room_type.replace('_',' ')}</p><h3 className="mt-3 text-xl font-bold">{room.name}</h3><p className="mt-2 text-sm text-zinc-500">Up to {room.capacity} people</p></article>)}</div> : <p className="mt-5 rounded-2xl border border-white/10 p-6 text-sm text-zinc-400">Club rooms are visible to members only.</p>}
+      {isMember ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{(rooms ?? []).map(room => <Link key={room.id} href={`/clubs/${id}/rooms/${room.id}`} className="glass rounded-2xl p-6 transition hover:border-lime-300/40"><p className="text-xs uppercase tracking-wider text-lime-300">{room.room_type.replace('_',' ')}</p><h3 className="mt-3 text-xl font-bold">{room.name}</h3><p className="mt-2 text-sm text-zinc-500">Up to {room.capacity} people · Enter room →</p></Link>)}</div> : <p className="mt-5 rounded-2xl border border-white/10 p-6 text-sm text-zinc-400">Club rooms are visible to members only.</p>}
     </section>
   </main>
 }
