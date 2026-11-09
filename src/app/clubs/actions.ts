@@ -202,7 +202,7 @@ export async function updateClubSettingsAction(formData: FormData) {
   const { error } = await supabase.rpc('update_club_settings', {
     p_club_id: parsed.data.club_id,
     p_name: parsed.data.name,
-    p_description: parsed.data.description || null,
+    p_description: parsed.data.description ?? '',
     p_visibility: parsed.data.visibility,
     p_capacity: parsed.data.capacity,
   })
