@@ -47,7 +47,7 @@ In Supabase Dashboard → Authentication → Providers, enable Google with OAuth
 - **Realtime chat/presence:** Code and database policies are committed/applied. Multi-account browser testing is still required; Presence shows who is connected but is not a reservation/seat-lock system.
 - **3D rooms/avatars:** A Three.js / React Three Fiber nightclub scene is now implemented with low-data/high-quality rendering, keyboard and touch movement, dance styles, and private Realtime avatar position sharing. It still needs real multi-account browser testing, authoritative movement validation, collision refinement, optimized character assets and device profiling.
 - **Music:** Commercial music requires appropriate rights/licensing.
-- **Payments/credits:** PayHero credentials, callback validation, idempotency and ledger are not connected.
+- **Payments/credits:** Wallet ledger, M-Pesa initiation route, PayHero callback verification, idempotent credit settlement and wallet history UI are implemented. Live payment testing still requires PayHero API credentials, channel ID, a public HTTPS callback URL, server-side Supabase service-role configuration, and Imfezi-approved credit packages/pricing.
 - **Safety operations:** Basic club reporting and moderator removal/review tools exist. Platform-wide blocking, escalation, moderator audit trails, spam controls and retention policies are still required before public launch.
 
 The Supabase database was provisioned separately. Club-engine, chat-safety, roster, reporting and Realtime authorization SQL have been applied to the live project. Security and health advisors currently report no findings. The live schema is not yet fully reproducible from a clean Supabase CLI database: the repository still needs a complete baseline migration for the pre-existing core schema and earlier DJ migrations. The newest room-movement authorization migration is recorded in `supabase/migrations/`, but do not treat that single file as a complete database bootstrap.
@@ -87,3 +87,19 @@ Avatar appearance choices are saved to the user's own `profiles.avatar_config` f
 ### PWA behaviour
 
 The service worker caches only the static `/offline` fallback. It does not cache authenticated navigation, API responses, payment information or profile data. Navigation is network-first and displays the offline page when the network is unavailable. The manifest and SVG icon are present; test installation in supported browsers and verify the icon presentation on target Android devices.
+
+
+## Wallet and PayHero integration
+
+The wallet uses a server-only PayHero integration based on the current PayHero v2 API:
+
+- The authenticated server route creates a payment intent using an Imfezi-configured package from `NIGHTLIFE_CREDIT_PACKAGES_JSON`.
+- PayHero STK Push requests use HTTP Basic authentication and the registered `PAYHERO_CHANNEL_ID`.
+- The callback is matched to the stored external reference, checkout request ID and expected amount.
+- Before crediting a wallet, the server checks the transaction status directly with PayHero's transaction-status endpoint.
+- Wallet settlement runs through a service-role-only database function, locks the payment intent, and is idempotent. Duplicate successful callbacks cannot credit twice.
+- Wallet balances, payment intents and ledger entries are readable only by their owner. Clients cannot insert wallet credits or edit payment statuses.
+
+Required server-only variables are listed in `.env.example`: `SUPABASE_SERVICE_ROLE_KEY`, `PAYHERO_USERNAME`, `PAYHERO_PASSWORD`, `PAYHERO_CHANNEL_ID`, and `NIGHTLIFE_CREDIT_PACKAGES_JSON`. Do not expose these as `NEXT_PUBLIC_` variables. Configure the package prices and credit amounts only after Imfezi approves them. Live payments remain disabled until the credentials and package configuration are supplied and tested end-to-end.
+
+The payment flow follows PayHero's documented [STK Push API](https://docs.payhero.co.ke/docs/post-initiate-mpesa-stk-push-request), [callback payload](https://docs.payhero.co.ke/docs/payment-callback), and [transaction status API](https://docs.payhero.co.ke/docs/get-transaction-status).
