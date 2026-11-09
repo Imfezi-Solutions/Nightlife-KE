@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import RoomChat from './room-chat'
-import { sendRoomMessageAction } from '../../actions'
+import { sendRoomMessageAction } from '../../../actions'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function ClubRoomPage({
