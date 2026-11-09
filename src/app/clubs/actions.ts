@@ -34,7 +34,7 @@ export async function createClubAction(formData: FormData) {
     redirect(`/clubs/new?error=${code}`)
   }
 
-  const result = data as { club_id: string; slug: string; invitation_code: string | null }
+  const result = data as unknown as { club_id: string; slug: string; invitation_code: string | null }
   revalidatePath('/discover')
   if (result.invitation_code) {
     redirect(`/clubs/${result.club_id}?code=${encodeURIComponent(result.invitation_code)}`)
