@@ -131,3 +131,8 @@ Members can block another room participant from a chat message. The block list i
 ### Club owner controls
 
 Owners can edit club name, description, visibility and capacity (2–30, never below current membership), rotate private invitation codes, and assign member/moderator/DJ roles. Moderators can remove ordinary members only; owners can remove non-owners. These operations are enforced by database RPCs rather than trusting form controls, and role changes, invitation rotation, settings changes and removals are written to the restricted audit log.
+
+
+### Profile privacy
+
+The base `profiles` table is now readable only by its owner. Other signed-in members use the restricted `public_profiles` view, which exposes only the fields needed for club member cards and avatar presentation; it deliberately omits gender and any private account data. Profile edits remain owner-only.
