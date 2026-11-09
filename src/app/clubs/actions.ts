@@ -182,3 +182,69 @@ export async function reviewClubReportAction(formData: FormData) {
   revalidatePath(`/clubs/${parsed.data.club_id}`)
   redirect(`/clubs/${parsed.data.club_id}?notice=report_updated`)
 }
+
+
+const updateClubSchema = z.object({
+  club_id: z.string().uuid(),
+  name: z.string().trim().min(3).max(60),
+  description: z.string().trim().max(500).optional(),
+  visibility: z.enum(['public', 'invite_only']),
+  capacity: z.coerce.number().int().min(2).max(30),
+})
+
+export async function updateClubSettingsAction(formData: FormData) {
+  const parsed = updateClubSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=club_settings')
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  if (!claims?.claims?.sub) redirect('/login')
+  const { error } = await supabase.rpc('update_club_settings', {
+    p_club_id: parsed.data.club_id,
+    p_name: parsed.data.name,
+    p_description: parsed.data.description || null,
+    p_visibility: parsed.data.visibility,
+    p_capacity: parsed.data.capacity,
+  })
+  if (error) redirect('/clubs/' + parsed.data.club_id + '?error=club_settings')
+  revalidatePath('/clubs/' + parsed.data.club_id)
+  revalidatePath('/discover')
+  redirect('/clubs/' + parsed.data.club_id + '?notice=settings_saved')
+}
+
+const rotateInvitationSchema = z.object({ club_id: z.string().uuid() })
+
+export async function rotateClubInvitationAction(formData: FormData) {
+  const parsed = rotateInvitationSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=invitation')
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  if (!claims?.claims?.sub) redirect('/login')
+  const { data: code, error } = await supabase.rpc('rotate_club_invitation_code', {
+    p_club_id: parsed.data.club_id,
+  })
+  if (error || !code) redirect('/clubs/' + parsed.data.club_id + '?error=invitation')
+  revalidatePath('/clubs/' + parsed.data.club_id)
+  redirect('/clubs/' + parsed.data.club_id + '?code=' + encodeURIComponent(code) + '&notice=invite_rotated')
+}
+
+const memberRoleSchema = z.object({
+  club_id: z.string().uuid(),
+  target_user_id: z.string().uuid(),
+  role: z.enum(['member', 'moderator', 'dj']),
+})
+
+export async function setClubMemberRoleAction(formData: FormData) {
+  const parsed = memberRoleSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) redirect('/discover?error=member_role')
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  if (!claims?.claims?.sub) redirect('/login')
+  const { error } = await supabase.rpc('set_club_member_role', {
+    p_club_id: parsed.data.club_id,
+    p_target_user_id: parsed.data.target_user_id,
+    p_role: parsed.data.role,
+  })
+  if (error) redirect('/clubs/' + parsed.data.club_id + '?error=member_role')
+  revalidatePath('/clubs/' + parsed.data.club_id)
+  redirect('/clubs/' + parsed.data.club_id + '?notice=role_updated')
+}
