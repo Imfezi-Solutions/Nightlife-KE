@@ -99,7 +99,7 @@ export default function RoomChat({
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-zinc-300">Here right now</span>
-            <span className="text-lime-200">{presentMembers.length} present · room capacity {capacity}</span>
+            <span className="text-lime-200">{presentMembers.length} connections · room capacity {capacity}</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {presentMembers.length === 0 ? (
