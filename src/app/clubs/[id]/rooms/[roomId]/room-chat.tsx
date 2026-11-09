@@ -83,9 +83,6 @@ export default function RoomChat({
           </article>
         ))}
       </div>
-      <form action="/clubs" className="border-t border-white/10 p-4" onSubmit={(event) => event.preventDefault()}>
-        <p className="text-xs text-zinc-500">Use the message form below to post. Keep it respectful.</p>
-      </form>
     </section>
   )
 }
