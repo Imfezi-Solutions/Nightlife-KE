@@ -5,7 +5,7 @@ import {
   joinClubAction,
   removeClubMemberAction,
   reportClubMemberAction,
-  reviewClubReportAction,
+  reviewClubReportAction,\n  updateClubSettingsAction,\n  rotateClubInvitationAction,\n  setClubMemberRoleAction,
 } from '../actions'
 
 type ClubSummary = {
@@ -107,9 +107,25 @@ export default async function ClubPage({
         )}
         {query.notice === 'member_removed' && <p className="mt-4 text-sm text-lime-200">Member removed from this club.</p>}
         {query.notice === 'report_sent' && <p className="mt-4 text-sm text-lime-200">Your report has been submitted to the club moderators.</p>}
-        {query.notice === 'report_updated' && <p className="mt-4 text-sm text-lime-200">Report status updated.</p>}
+        {query.notice === 'report_updated' && <p className="mt-4 text-sm text-lime-200">Report status updated.</p>}\n        {query.notice === 'settings_saved' && <p className="mt-4 text-sm text-lime-200">Club settings saved.</p>}\n        {query.notice === 'invite_rotated' && <p className="mt-4 text-sm text-lime-200">A new invitation code was generated. The previous code is no longer valid.</p>}\n        {query.notice === 'role_updated' && <p className="mt-4 text-sm text-lime-200">Member role updated.</p>}
         {query.error && <p className="mt-4 text-sm text-red-300">That action could not be completed. Check your permissions and try again.</p>}
       </section>
+
+      {isOwner && (
+        <section className="glass mt-8 rounded-3xl p-6">
+          <h2 className="text-xl font-black">Club settings</h2>
+          <p className="mt-2 text-sm text-zinc-400">Update your club details and control who can discover it.</p>
+          <form action={updateClubSettingsAction} className="mt-5 grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="club_id" value={id} />
+            <label className="text-xs font-semibold text-zinc-300">Club name<input name="name" required minLength={3} maxLength={60} defaultValue={club.name} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm" /></label>
+            <label className="text-xs font-semibold text-zinc-300">Member capacity<input name="capacity" type="number" min={2} max={30} required defaultValue={club.capacity} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm" /></label>
+            <label className="text-xs font-semibold text-zinc-300">Visibility<select name="visibility" defaultValue={club.visibility} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm"><option value="public">Public</option><option value="invite_only">Private · invitation only</option></select></label>
+            <label className="text-xs font-semibold text-zinc-300 sm:col-span-2">Description<textarea name="description" maxLength={500} rows={3} defaultValue={club.description ?? ''} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm" /></label>
+            <div className="sm:col-span-2"><button className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-black">Save club settings</button></div>
+          </form>
+          {club.visibility === 'invite_only' && <form action={rotateClubInvitationAction} className="mt-5 border-t border-white/10 pt-5"><input type="hidden" name="club_id" value={id}/><p className="mb-3 text-sm text-zinc-400">Generate a fresh invitation code. Existing invitation codes will stop working.</p><button className="rounded-xl border border-lime-300/30 px-5 py-3 text-sm font-bold text-lime-200">Rotate invitation code</button></form>}
+        </section>
+      )}
 
       <section className="mt-10">
         <h2 className="text-2xl font-black">Explore the spaces</h2>
@@ -155,6 +171,16 @@ export default async function ClubPage({
                         <input type="hidden" name="club_id" value={id} />
                         <input type="hidden" name="target_user_id" value={member.user_id} />
                         <button className="rounded-lg border border-red-300/20 px-3 py-2 text-xs text-red-200 hover:bg-red-300/10">Remove</button>
+                      </form>
+                    )}
+                    {isOwner && member.role !== 'owner' && (
+                      <form action={setClubMemberRoleAction} className="flex items-center gap-2">
+                        <input type="hidden" name="club_id" value={id}/>
+                        <input type="hidden" name="target_user_id" value={member.user_id}/>
+                        <select name="role" defaultValue={member.role} aria-label={'Role for ' + label} className="max-w-28 rounded-lg border border-white/10 bg-black/30 px-2 py-2 text-xs">
+                          <option value="member">Member</option><option value="moderator">Moderator</option><option value="dj">DJ</option>
+                        </select>
+                        <button className="rounded-lg border border-lime-300/20 px-3 py-2 text-xs text-lime-200">Save</button>
                       </form>
                     )}
                   </li>
