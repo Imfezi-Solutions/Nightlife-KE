@@ -91,7 +91,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{
  },[publish])
  useEffect(()=>{
   const supabase=createClient()
-  const channel=supabase.channel('club-room:'+roomId,{config:{private:true,presence:{key:userId}}})
+  const channel=supabase.channel('club-movement:'+roomId,{config:{private:true,presence:{key:userId}}})
   channelRef.current=channel
   const sync=()=>{
    const state=channel.presenceState() as Record<string,Array<Record<string,unknown>>>
@@ -126,7 +126,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig}:{
  function dance(d:Dance){const next={...position,dance:d};setPosition(next);setAvatar(a=>({...a,dance:d}));publish(next)}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Real-time 3D venue</p><h2 className="mt-1 text-xl font-black">The dancefloor</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} connections</p></div>
+   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Real-time 3D venue</p><h2 className="mt-1 text-xl font-black">The dancefloor</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
    <label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label>
   </header>
   <div className="relative h-[420px] sm:h-[540px]">
