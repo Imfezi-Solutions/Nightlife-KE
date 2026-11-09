@@ -249,6 +249,115 @@ export type Database = {
         }
         Relationships: []
       }
+      dj_queue: {
+        Row: {
+          added_by: string
+          artist: string | null
+          created_at: string
+          duration_ms: number
+          id: string
+          position: number
+          provider_asset_id: string
+          rights_reference: string
+          rights_status: string
+          room_id: string
+          source_type: string
+          title: string
+        }
+        Insert: {
+          added_by: string
+          artist?: string | null
+          created_at?: string
+          duration_ms: number
+          id?: string
+          position?: number
+          provider_asset_id: string
+          rights_reference: string
+          rights_status?: string
+          room_id: string
+          source_type: string
+          title: string
+        }
+        Update: {
+          added_by?: string
+          artist?: string | null
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          position?: number
+          provider_asset_id?: string
+          rights_reference?: string
+          rights_status?: string
+          room_id?: string
+          source_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dj_queue_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dj_sessions: {
+        Row: {
+          current_track_id: string | null
+          playback_status: string
+          position_ms: number
+          room_id: string
+          started_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          current_track_id?: string | null
+          playback_status?: string
+          position_ms?: number
+          room_id: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          current_track_id?: string | null
+          playback_status?: string
+          position_ms?: number
+          room_id?: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dj_sessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_djs: {
+        Row: {
+          granted_at: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
