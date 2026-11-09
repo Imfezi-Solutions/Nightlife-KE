@@ -33,7 +33,7 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
   <header className="mt-7"><p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">{room.room_type.replace('_',' ')} · {room.capacity} capacity</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">{room.name}</h1><p className="mt-2 text-sm text-zinc-400">You’re in the room. Meet the people here and keep the conversation respectful.</p></header>
   {query.error==='slow_down'&&<p className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-sm text-amber-200">You’re sending messages too quickly. Wait a few seconds and try again.</p>}
   {query.error==='message'&&<p className="mt-5 rounded-xl border border-red-300/20 bg-red-300/5 p-3 text-sm text-red-200">Your message could not be sent. Please try again.</p>}
-  <Room3DEngineLoader roomId={roomId} userId={userId} displayName={profile?.display_name??'You'} initialConfig={profile?.avatar_config??null}/>
+  <Room3DEngineLoader roomId={roomId} userId={userId} displayName={profile?.display_name??'You'} initialConfig={profile?.avatar_config??null} roomType={room.room_type}/>
   <RoomChat clubId={id} roomId={roomId} currentUserId={userId} capacity={room.capacity} initialMessages={messages??[]}/>
   <DjConsole roomId={roomId} currentUserId={userId} canControl={['owner','moderator','dj'].includes(membership.role)||Boolean(platformDj)} initialQueue={musicQueue??[]} initialSession={musicSession??null}/>
   <form action={sendRoomMessageAction} className="glass mt-4 rounded-2xl p-3 sm:p-4">
