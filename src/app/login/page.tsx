@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
-  const searchParams = useSearchParams()
+  const [authError, setAuthError] = useState('')
+  useEffect(() => { setAuthError(new URLSearchParams(window.location.search).get('error') ?? '') }, [])
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,12 +53,11 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    const requestedNext = searchParams.get('next') ?? '/onboarding'
+    const requestedNext = new URLSearchParams(window.location.search).get('next') ?? '/onboarding'
     const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/onboarding'
     window.location.assign(next)
   }
 
-  const authError = searchParams.get('error')
   return <main className="noise flex min-h-screen items-center justify-center px-5 py-12"><div className="glass w-full max-w-md rounded-[2rem] p-8 sm:p-10">
     <Link href="/" className="text-sm font-bold tracking-wider">← NIGHTLIFE<span className="text-lime-300"> KE</span></Link>
     {confirmationSent ? <>
