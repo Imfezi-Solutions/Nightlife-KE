@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Sparkles } from '@react-three/drei'
-import { MathUtils, type Group } from 'three'
+import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -89,13 +89,14 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
  const [status,setStatus]=useState('Connecting…')
  const channelRef=useRef<RealtimeChannel|null>(null)
  const lastSent=useRef(0)
- const publish=useCallback((p:Position)=>{
+ const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
-  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance})}
+  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,skin:a.skin,hair:a.hair,outfit:a.outfit})}
  },[])
+ useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  const move=useCallback((dx:number,dz:number)=>{
-  setPosition(current=>{const next={x:clamp(current.x+dx,-7,7),z:clamp(current.z+dz,-5,5),dance:current.dance};publish(next);return next})
- },[publish])
+  setPosition(current=>({x:clamp(current.x+dx,-7,7),z:clamp(current.z+dz,-5,5),dance:current.dance}))
+ },[])
  useEffect(()=>{
   const supabase=createClient()
   const channel=supabase.channel('club-movement:'+roomId,{config:{private:true,presence:{key:userId}}})
@@ -107,7 +108,10 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
     if(id===userId||!metas?.length)continue
     const meta=metas[metas.length-1]
     const dance=['groove','bounce','sway','hype'].includes(String(meta.dance))?meta.dance as Dance:'groove'
-    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance}})
+    const skinTone=['warm','deep','light','tan'].includes(String(meta.skin))?meta.skin as Avatar['skin']:'warm'
+    const hair=['curly','fade','braids','short'].includes(String(meta.hair))?meta.hair as Avatar['hair']:'curly'
+    const outfit=['neon','street','vip','classic'].includes(String(meta.outfit))?meta.outfit as Avatar['outfit']:'neon'
+    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance},avatar:{skin:skinTone,hair,outfit,dance}})
    }
    setRemotes(list)
   }
