@@ -13,25 +13,19 @@ type Message = {
 }
 
 type RoomPresence = {
-  user_id: string
-  display_name: string
-  username: string
+  online: boolean
 }
 
 export default function RoomChat({
   clubId,
   roomId,
   currentUserId,
-  displayName,
-  username,
   capacity,
   initialMessages,
 }: {
   clubId: string
   roomId: string
   currentUserId: string
-  displayName: string
-  username: string
   capacity: number
   initialMessages: Message[]
 }) {
@@ -50,10 +44,11 @@ export default function RoomChat({
 
     const syncPresence = () => {
       const entries = Object.values(channel.presenceState<RoomPresence>()).flat()
-      const uniqueMembers = Array.from(
-        new Map(entries.map((entry) => [entry.user_id, entry])).values(),
+      // Presence metadata is client-supplied. Never render it as a verified identity.
+      const connections = Array.from(
+        new Set(Object.keys(channel.presenceState<RoomPresence>())),
       )
-      setPresentMembers(uniqueMembers)
+      setPresentMembers(connections.map(() => ({ online: true })))
     }
 
     channel
@@ -77,12 +72,7 @@ export default function RoomChat({
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setConnection('Live')
-          void channel.track({
-            user_id: currentUserId,
-            display_name: displayName,
-            username,
-            joined_at: new Date().toISOString(),
-          })
+          void channel.track({ online: true })
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setConnection('Reconnecting…')
         } else if (status === 'CLOSED') {
@@ -93,7 +83,7 @@ export default function RoomChat({
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [roomId, currentUserId, displayName, username])
+  }, [roomId, currentUserId])
 
   return (
     <section className="glass mt-8 flex min-h-[65vh] flex-col overflow-hidden rounded-3xl">
@@ -115,11 +105,9 @@ export default function RoomChat({
           <div className="mt-2 flex flex-wrap gap-2">
             {presentMembers.length === 0 ? (
               <span className="text-xs text-zinc-500">Waiting for people to arrive…</span>
-            ) : presentMembers.map((member) => (
-              <span key={member.user_id} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                {member.user_id === currentUserId ? 'You' : member.display_name || `@${member.username}`}
-              </span>
-            ))}
+            ) : (
+              <span className="text-xs text-zinc-300">{presentMembers.length} active connection{presentMembers.length === 1 ? '' : 's'} in this room</span>
+            )}
           </div>
         </div>
       </header>
