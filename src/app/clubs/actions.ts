@@ -60,7 +60,7 @@ export async function joinClubAction(formData: FormData) {
     p_invitation_code: parsed.data.invitation_code || undefined,
   })
   if (error) {
-    const code = error.code === '42501' ? 'verification' : 'join'
+    const code = error.message.includes('18+ verification required') ? 'verification' : 'join'
     redirect(`/discover?error=${code}`)
   }
   revalidatePath('/discover')
