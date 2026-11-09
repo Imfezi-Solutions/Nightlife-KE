@@ -95,7 +95,14 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
  },[])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  const move=useCallback((dx:number,dz:number)=>{
-  setPosition(current=>({x:clamp(current.x+dx,-7,7),z:clamp(current.z+dz,-5,5),dance:current.dance}))
+  setPosition(current=>{
+   const x=clamp(current.x+dx,-7,7)
+   const z=clamp(current.z+dz,-5,5)
+   const blockedStage=Math.abs(x)<2.5 && z < -3.7
+   const blockedLeftLounge=Math.abs(x+5.2)<1.5 && z>-2.8 && z<-.8
+   const blockedRightLounge=Math.abs(x-5.2)<1.5 && z>-2.8 && z<-.8
+   return blockedStage||blockedLeftLounge||blockedRightLounge?current:{x,z,dance:current.dance}
+  })
  },[])
  useEffect(()=>{
   const supabase=createClient()
