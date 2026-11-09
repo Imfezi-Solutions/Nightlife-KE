@@ -111,7 +111,7 @@ Platform roles are stored in `public.platform_admins`: `super_admin`, `platform_
 
 The `/admin` dashboard is role-gated and includes platform counts, report review, finance payment review and an audit trail according to role permissions. Report status changes run through a database function that checks the actor's assigned role and records an audit entry atomically.
 
-For initial setup, configure `NIGHTLIFE_INITIAL_SUPER_ADMIN_EMAIL` to the verified email address of the first administrator, configure `SUPABASE_SERVICE_ROLE_KEY` server-side, sign in with that email, and visit `/admin/setup`. The bootstrap endpoint only grants the first super-admin role when no other administrator exists. After setup, remove or unset the allowlist variable. Additional administrators must be provisioned by the super administrator through a future role-management workflow or trusted database administration.
+For initial setup, configure `NIGHTLIFE_INITIAL_SUPER_ADMIN_EMAIL` to the verified email address of the first administrator, configure `SUPABASE_SERVICE_ROLE_KEY` server-side, sign in with that email, and visit `/admin/setup`. The bootstrap endpoint only grants the first super-admin role when no other administrator exists. After setup, remove or unset the allowlist variable. The super administrator can assign `platform_admin`, `moderator`, `finance_admin` and `support_admin` roles to existing verified accounts from the Admin dashboard. Super-admin status is intentionally not assignable through this form.
 
 The current dashboard does not yet implement account suspension/ban workflows, full club-management controls, or a complete administrator role-management interface.
 
