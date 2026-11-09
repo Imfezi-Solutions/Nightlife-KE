@@ -34,7 +34,7 @@ export default async function ClubRoomPage({
 
   if (!room || !membership) notFound()
 
-  const [{ data: club }, { data: messages }] = await Promise.all([
+  const [{ data: club }, { data: messages }, { data: profile }] = await Promise.all([
     supabase.from('clubs').select('name').eq('id', id).maybeSingle(),
     supabase.from('chat_messages')
       .select('id,club_id,room_id,author_id,body,created_at')
@@ -42,6 +42,7 @@ export default async function ClubRoomPage({
       .eq('room_id', roomId)
       .order('created_at', { ascending: true })
       .limit(100),
+    supabase.from('profiles').select('username,display_name').eq('id', userId).maybeSingle(),
   ])
 
   return (
@@ -60,6 +61,9 @@ export default async function ClubRoomPage({
         clubId={id}
         roomId={roomId}
         currentUserId={userId}
+        displayName={profile?.display_name || profile?.username || 'Member'}
+        username={profile?.username || 'member'}
+        capacity={room.capacity}
         initialMessages={messages ?? []}
       />
 
