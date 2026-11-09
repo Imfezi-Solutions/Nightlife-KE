@@ -12,24 +12,51 @@ type Message = {
   created_at: string
 }
 
+type RoomPresence = {
+  user_id: string
+  display_name: string
+  username: string
+}
+
 export default function RoomChat({
   clubId,
   roomId,
   currentUserId,
+  displayName,
+  username,
+  capacity,
   initialMessages,
 }: {
   clubId: string
   roomId: string
   currentUserId: string
+  displayName: string
+  username: string
+  capacity: number
   initialMessages: Message[]
 }) {
   const [messages, setMessages] = useState(initialMessages)
   const [connection, setConnection] = useState('Connecting…')
+  const [presentMembers, setPresentMembers] = useState<RoomPresence[]>([])
 
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase
-      .channel(`club-room-${clubId}-${roomId}`)
+    const channel = supabase.channel(`club-room:${roomId}`, {
+      config: {
+        private: true,
+        presence: { key: currentUserId },
+      },
+    })
+
+    const syncPresence = () => {
+      const entries = Object.values(channel.presenceState<RoomPresence>()).flat()
+      const uniqueMembers = Array.from(
+        new Map(entries.map((entry) => [entry.user_id, entry])).values(),
+      )
+      setPresentMembers(uniqueMembers)
+    }
+
+    channel
       .on(
         'postgres_changes',
         {
@@ -46,27 +73,55 @@ export default function RoomChat({
           })
         },
       )
+      .on('presence', { event: 'sync' }, syncPresence)
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setConnection('Live')
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setConnection('Reconnecting…')
-        else if (status === 'CLOSED') setConnection('Disconnected')
+        if (status === 'SUBSCRIBED') {
+          setConnection('Live')
+          void channel.track({
+            user_id: currentUserId,
+            display_name: displayName,
+            username,
+            joined_at: new Date().toISOString(),
+          })
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnection('Reconnecting…')
+        } else if (status === 'CLOSED') {
+          setConnection('Disconnected')
+        }
       })
 
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [clubId, roomId])
+  }, [roomId, currentUserId, displayName, username])
 
   return (
     <section className="glass mt-8 flex min-h-[65vh] flex-col overflow-hidden rounded-3xl">
-      <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-        <div>
-          <h2 className="font-bold">Room chat</h2>
-          <p className="text-xs text-zinc-500">Messages are visible to club members</p>
+      <header className="border-b border-white/10 px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-bold">Room chat</h2>
+            <p className="text-xs text-zinc-500">Messages are visible to club members</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs ${connection === 'Live' ? 'bg-lime-300/10 text-lime-200' : 'bg-white/5 text-zinc-400'}`}>
+            {connection}
+          </span>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs ${connection === 'Live' ? 'bg-lime-300/10 text-lime-200' : 'bg-white/5 text-zinc-400'}`}>
-          {connection}
-        </span>
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-zinc-300">Here right now</span>
+            <span className="text-lime-200">{presentMembers.length} present · room capacity {capacity}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {presentMembers.length === 0 ? (
+              <span className="text-xs text-zinc-500">Waiting for people to arrive…</span>
+            ) : presentMembers.map((member) => (
+              <span key={member.user_id} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                {member.user_id === currentUserId ? 'You' : member.display_name || `@${member.username}`}
+              </span>
+            ))}
+          </div>
+        </div>
       </header>
       <div className="flex-1 space-y-3 overflow-y-auto p-5" aria-live="polite">
         {messages.length === 0 ? (
