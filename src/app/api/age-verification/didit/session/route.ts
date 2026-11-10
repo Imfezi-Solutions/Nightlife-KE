@@ -5,16 +5,38 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 const DIDIT_API_URL = 'https://verification.didit.me/v3/session/'
+const EXPECTED_WORKFLOW_ID = '604e2b8e-549a-4036-8611-d4b99c775e49'
+const EXPECTED_APPLICATION_ID = 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Sign in before verifying your age.' }, { status: 401 })
 
+  const { data: declaration, error: declarationError } = await supabase
+    .from('age_declarations')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  if (declarationError || !declaration) {
+    return NextResponse.json({ error: 'Complete the 18+ declaration before starting verification.' }, { status: 403 })
+  }
+
   const apiKey = process.env.DIDIT_API_KEY
   const workflowId = process.env.DIDIT_WORKFLOW_ID
-  if (!apiKey || !workflowId) {
-    return NextResponse.json({ error: 'Age verification is not configured yet. Please try again later.' }, { status: 503 })
+  const applicationId = process.env.DIDIT_APPLICATION_ID
+  const environment = process.env.DIDIT_ENVIRONMENT
+
+  // This integration is deliberately pinned to the Didit Sandbox application.
+  if (
+    !apiKey ||
+    !workflowId ||
+    workflowId !== EXPECTED_WORKFLOW_ID ||
+    applicationId !== EXPECTED_APPLICATION_ID ||
+    environment !== 'sandbox' ||
+    !apiKey.startsWith('sk_test_')
+  ) {
+    return NextResponse.json({ error: 'Sandbox age verification is not fully configured. Please try again later.' }, { status: 503 })
   }
 
   let admin
@@ -22,6 +44,19 @@ export async function POST(request: Request) {
     admin = createAdminClient()
   } catch {
     return NextResponse.json({ error: 'Age verification service is not configured on the server.' }, { status: 503 })
+  }
+
+  const { data: existing } = await supabase
+    .from('age_verifications')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'verified')
+    .not('verified_at', 'is', null)
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
+    .maybeSingle()
+  if (existing) {
+    return NextResponse.json({ error: 'Your age is already verified.' }, { status: 409 })
   }
 
   const origin = new URL(request.url).origin
@@ -49,13 +84,27 @@ export async function POST(request: Request) {
         callback: origin + '/verify-age?returned=1',
         callback_method: 'completer',
         language: 'en',
+        metadata: { product: 'nightlife-ke', purpose: 'age_18_plus' },
       }),
     })
 
-    const payload = await response.json().catch(() => null) as { session_id?: unknown; url?: unknown } | null
-    if (!response.ok || !payload || typeof payload.session_id !== 'string' || typeof payload.url !== 'string') {
+    const payload = await response.json().catch(() => null) as {
+      session_id?: unknown
+      url?: unknown
+      workflow_id?: unknown
+      vendor_data?: unknown
+    } | null
+
+    if (
+      !response.ok ||
+      !payload ||
+      typeof payload.session_id !== 'string' ||
+      typeof payload.url !== 'string' ||
+      payload.workflow_id !== workflowId ||
+      payload.vendor_data !== user.id
+    ) {
       await admin.from('age_verifications').update({ status: 'expired' }).eq('id', record.id)
-      return NextResponse.json({ error: 'Didit could not create a verification session. Please try again.' }, { status: 502 })
+      return NextResponse.json({ error: 'Didit could not create a valid age-verification session. Please try again.' }, { status: 502 })
     }
 
     const verificationUrl = payload.url.startsWith('https://')
