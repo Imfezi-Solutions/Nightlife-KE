@@ -32,29 +32,40 @@ function canonicalJson(value: unknown): string {
     .join(',') + '}'
 }
 
+function validDigest(supplied: string, expected: Buffer) {
+  if (!/^[a-f0-9]{64}$/i.test(supplied)) return false
+  const actual = Buffer.from(supplied, 'hex')
+  return actual.length === expected.length && timingSafeEqual(actual, expected)
+}
+
 function validSignature(
   payload: Record<string, unknown>,
-  supplied: string,
-  headerTimestamp: string,
+  rawBody: string,
+  headers: Headers,
   secret: string,
 ) {
-  if (!/^[a-f0-9]{64}$/i.test(supplied) || !/^\d+$/.test(headerTimestamp)) return false
+  const headerTimestamp = headers.get('x-timestamp') ?? ''
+  if (!/^\d+$/.test(headerTimestamp)) return false
 
   const bodyTimestamp = payload.timestamp
   if (typeof bodyTimestamp !== 'number' || !Number.isSafeInteger(bodyTimestamp)) return false
   if (String(bodyTimestamp) !== headerTimestamp) return false
   if (Math.abs(Math.floor(Date.now() / 1000) - bodyTimestamp) > 300) return false
 
+  // Didit V2 signs canonical JSON; the original signature signs exact request bytes.
+  // Accept either documented signature so harmless transport/body formatting does not
+  // cause valid deliveries to fail.
+  const v2 = headers.get('x-signature-v2') ?? ''
+  const raw = headers.get('x-signature') ?? ''
   let canonical: string
   try {
     canonical = canonicalJson(payload)
   } catch {
-    return false
+    canonical = ''
   }
-
-  const expected = createHmac('sha256', secret).update(canonical, 'utf8').digest()
-  const actual = Buffer.from(supplied, 'hex')
-  return actual.length === expected.length && timingSafeEqual(actual, expected)
+  const expectedV2 = createHmac('sha256', secret).update(canonical, 'utf8').digest()
+  const expectedRaw = createHmac('sha256', secret).update(rawBody, 'utf8').digest()
+  return validDigest(v2, expectedV2) || validDigest(raw, expectedRaw)
 }
 
 export async function POST(request: Request) {
@@ -73,9 +84,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid webhook payload.' }, { status: 400 })
   }
 
-  const signature = request.headers.get('x-signature-v2') ?? ''
-  const timestamp = request.headers.get('x-timestamp') ?? ''
-  if (!validSignature(payload, signature, timestamp, secret)) {
+  if (!validSignature(payload, rawBody, request.headers, secret)) {
+    console.warn('[didit-webhook] signature_or_timestamp_rejected')
     return NextResponse.json({ error: 'Invalid or expired webhook signature.' }, { status: 401 })
   }
 
@@ -113,8 +123,14 @@ export async function POST(request: Request) {
     .eq('user_id', userId)
     .maybeSingle()
 
-  if (lookupError) return NextResponse.json({ error: 'Could not locate the verification record.' }, { status: 500 })
-  if (!record) return NextResponse.json({ error: 'Verification session was not found.' }, { status: 404 })
+  if (lookupError) {
+    console.error('[didit-webhook] verification_record_lookup_failed', lookupError.message)
+    return NextResponse.json({ error: 'Could not locate the verification record.' }, { status: 500 })
+  }
+  if (!record) {
+    console.warn('[didit-webhook] verification_record_not_found')
+    return NextResponse.json({ error: 'Verification session was not found.' }, { status: 404 })
+  }
 
   // The published Live workflow enforces Kenya's minimum age of 18 itself.
   // Its response_attributes intentionally return no identity-document data,
@@ -129,8 +145,7 @@ export async function POST(request: Request) {
       const hasApprovedDocument = Array.isArray(idChecks) &&
         idChecks.some((item) =>
           item && typeof item === 'object' &&
-          (item as Record<string, unknown>).status === 'Approved' &&
-          (item as Record<string, unknown>).verification_method === 'document',
+          (item as Record<string, unknown>).status === 'Approved',
         )
 
       if (!hasApprovedDocument) {
