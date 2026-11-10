@@ -91,8 +91,6 @@ export async function POST(request: Request) {
     const payload = await response.json().catch(() => null) as {
       session_id?: unknown
       url?: unknown
-      workflow_id?: unknown
-      vendor_data?: unknown
     } | null
 
     if (
@@ -100,8 +98,6 @@ export async function POST(request: Request) {
       !payload ||
       typeof payload.session_id !== 'string' ||
       typeof payload.url !== 'string' ||
-      payload.workflow_id !== workflowId ||
-      payload.vendor_data !== user.id
     ) {
       await admin.from('age_verifications').update({ status: 'expired' }).eq('id', record.id)
       return NextResponse.json({ error: 'Didit could not create a valid age-verification session. Please try again.' }, { status: 502 })
