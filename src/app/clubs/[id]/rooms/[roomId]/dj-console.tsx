@@ -18,10 +18,8 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
   const [session, setSession] = useState(initialSession)
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
-  const [assetId, setAssetId] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [rightsConfirmed, setRightsConfirmed] = useState(false)
-  const sourceType = 'original_upload' as const
   const [duration, setDuration] = useState('180000')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -57,7 +55,7 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
       const { data, error } = await supabase.storage.from('room-audio').createSignedUrl(activeTrack.provider_asset_id, 3600)
       if (cancelled) return
       if (error || !data?.signedUrl) {
-        setAudioNotice('The approved audio asset could not be loaded for this room.')
+        setAudioNotice('The uploaded audio file could not be loaded. Check that the file format is playable in your browser.')
         return
       }
       setAudioUrl(data.signedUrl)
@@ -100,13 +98,14 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
     event.preventDefault()
     setBusy(true); setNotice('')
     const supabase = createClient()
-    let storedAssetId = assetId.trim()
+    let storedAssetId = ''
     let uploadedPath = ''
     {
-      if (!audioFile) { setBusy(false); setNotice('Choose an original or public-domain audio file to upload.'); return }
+      if (!audioFile) { setBusy(false); setNotice('Choose an audio file to upload.'); return }
       if (audioFile.size > 25 * 1024 * 1024) { setBusy(false); setNotice('Audio files must be 25 MB or smaller.'); return }
-      const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/mp4','audio/aac','audio/flac','audio/x-m4a','audio/webm']
-      if (audioFile.type && !audioFile.type.startsWith('audio/') && !allowed.includes(audioFile.type)) { setBusy(false); setNotice('Use an MP3, WAV, OGG, MP4, AAC or FLAC audio file.'); return }
+      const audioExtension = /\.(mp3|wav|ogg|oga|m4a|mp4|aac|flac|webm|weba)$/i.test(audioFile.name)
+      if (audioFile.type && !audioFile.type.startsWith('audio/') && !audioExtension) { setBusy(false); setNotice('Choose a supported audio file (MP3, WAV, OGG, M4A, AAC, FLAC or WebM).'); return }
+      if (!audioFile.type && !audioExtension) { setBusy(false); setNotice('Choose a supported audio file (MP3, WAV, OGG, M4A, AAC, FLAC or WebM).'); return }
       const safeName = audioFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       uploadedPath = roomId + '/' + currentUserId + '/' + crypto.randomUUID() + '-' + safeName
       const { error: uploadError } = await supabase.storage.from('room-audio').upload(uploadedPath, audioFile, { contentType: audioFile.type, upsert: false })
@@ -125,7 +124,7 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
       setNotice('Could not submit this track. Check your DJ permission and the details.')
       return
     }
-    setTitle(''); setArtist(''); setAssetId(''); setAudioFile(null); setRightsConfirmed(false)
+    setTitle(''); setArtist(''); setAudioFile(null); setRightsConfirmed(false)
     setNotice('Track added to the room queue. It is ready for playback.')
   }
 
@@ -168,7 +167,7 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
         </div>}
       </div>
       {audioNotice && <p role="status" className="mt-3 text-xs text-amber-200">{audioNotice}</p>}
-      <p className="mt-3 text-xs text-zinc-500">Original uploads and verified public-domain recordings can play after rights approval. Licensed-provider playback needs a provider-specific adapter and agreement.</p>
+      <p className="mt-3 text-xs text-zinc-500">Room audio is available after upload. Your browser may still ask you to enable audio the first time.</p>
     </div>
     <div><h3 className="font-bold">Room playlist</h3>{queue.length ? <ol className="mt-3 space-y-2">{queue.map((track,i)=><li key={track.id} className="flex justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm"><span>{i+1}. {track.title}{track.artist ? ' — ' + track.artist : ''}</span><span className="text-xs text-zinc-500">{Math.round(track.duration_ms/60000)} min</span></li>)}</ol> : <p className="mt-2 text-sm text-zinc-500">No tracks in this room yet.</p>}</div>
     {canControl && <form onSubmit={addTrack} className="space-y-3 border-t border-white/10 pt-5">
