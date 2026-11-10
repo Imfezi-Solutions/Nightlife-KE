@@ -42,7 +42,7 @@ function validSignature(
     return false
   }
 
-  // Didit V3 X-Signature-V2 signs compact JSON with recursively sorted keys.
+  // Didit V3 X-Signature-V2 signs compact JSON with recursively sorted keys.\n  // Never replace this with raw-body hashing: that is the legacy X-Signature algorithm.
   const canonical = JSON.stringify(sortKeys(normalizeNumbers(payload)))
   const expected = createHmac('sha256', secret).update(canonical, 'utf8').digest()
   const actual = Buffer.from(supplied, 'hex')
