@@ -24,12 +24,22 @@ const clamp = (n:number,min:number,max:number) => Math.max(min,Math.min(max,n))
 
 function Dancer({ position, avatar, me=false }: { position:Position; avatar:Avatar; me?:boolean }) {
  const ref = useRef<Group>(null)
+ const leftArm = useRef<Group>(null)
+ const rightArm = useRef<Group>(null)
+ const leftLeg = useRef<Group>(null)
+ const rightLeg = useRef<Group>(null)
  useFrame(({clock}) => {
   if (!ref.current) return
   const t = clock.getElapsedTime()
-  const speed = avatar.dance === 'hype' ? 8 : avatar.dance === 'bounce' ? 5 : 3
-  ref.current.position.y = Math.abs(Math.sin(t*speed + position.x))* (avatar.dance === 'hype' ? .25 : .12)
-  ref.current.rotation.z = Math.sin(t*2 + position.z) * (avatar.dance === 'sway' ? .2 : .07)
+  const speed = avatar.dance === 'hype' ? 8 : avatar.dance === 'bounce' ? 5 : avatar.dance === 'sway' ? 2.2 : 3
+  const phase = t * speed + position.x * .7
+  ref.current.position.y = Math.abs(Math.sin(phase)) * (avatar.dance === 'hype' ? .3 : avatar.dance === 'bounce' ? .2 : .1)
+  ref.current.rotation.z = Math.sin(t*2.2 + position.z) * (avatar.dance === 'sway' ? .22 : .09)
+  ref.current.rotation.y = Math.sin(t*1.4 + position.x) * .12
+  if (leftArm.current) leftArm.current.rotation.z = -.25 + Math.sin(phase + Math.PI) * (avatar.dance === 'hype' ? .95 : .55)
+  if (rightArm.current) rightArm.current.rotation.z = .25 + Math.sin(phase) * (avatar.dance === 'hype' ? .95 : .55)
+  if (leftLeg.current) leftLeg.current.rotation.x = Math.sin(phase) * .24
+  if (rightLeg.current) rightLeg.current.rotation.x = Math.sin(phase + Math.PI) * .24
  })
  return <group ref={ref} position={[position.x,0,position.z]}>
   <mesh position={[0,1.55,0]} castShadow><sphereGeometry args={[.27,16,16]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
@@ -38,11 +48,38 @@ function Dancer({ position, avatar, me=false }: { position:Position; avatar:Avat
   {avatar.hair === 'short' && <mesh position={[0,1.75,-.02]}><sphereGeometry args={[.25,14,10,0,Math.PI*2,0,Math.PI*.32]}/><meshStandardMaterial color="#20151f"/></mesh>}
   {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.035,.34,4,6]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
   <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.29,.55,4,8]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
-  <mesh position={[-.37,1.03,0]} rotation={[0,0,-.35]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
-  <mesh position={[.37,1.03,0]} rotation={[0,0,.35]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
-  <mesh position={[-.15,.4,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh>
-  <mesh position={[.15,.4,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh>
+  <group ref={leftArm} position={[-.37,1.03,0]} rotation={[0,0,-.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
+  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
+  <group ref={leftLeg} position={[-.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh></group>
+  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh></group>
   {me && <mesh position={[0,2.08,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
+ </group>
+}
+
+function MovingClubLights() {
+ const rig = useRef<Group>(null)
+ useFrame(({clock}) => {
+  if (!rig.current) return
+  rig.current.rotation.y = Math.sin(clock.elapsedTime * .42) * .8
+  rig.current.rotation.z = Math.sin(clock.elapsedTime * .7) * .12
+ })
+ return <group ref={rig} position={[0,5.5,-1]}>
+  <spotLight position={[-4,0,0]} target-position={[0,-5,-1]} angle={.42} penumbra={.8} intensity={48} color="#c05aff" distance={18}/>
+  <spotLight position={[4,0,0]} target-position={[0,-5,-1]} angle={.42} penumbra={.8} intensity={42} color="#42dfff" distance={18}/>
+  <mesh position={[-2.5,-3.5,-.4]} rotation={[Math.PI,0,0]}><coneGeometry args={[2.1,7,24,1,true]}/><meshBasicMaterial color="#bd52ff" transparent opacity={.075} depthWrite={false}/></mesh>
+  <mesh position={[2.5,-3.5,-.4]} rotation={[Math.PI,0,0]}><coneGeometry args={[2.1,7,24,1,true]}/><meshBasicMaterial color="#38dfff" transparent opacity={.075} depthWrite={false}/></mesh>
+ </group>
+}
+
+function BarDrinks({ roomType }: { roomType:string }) {
+ const spots = roomType === 'bar' ? [-1.65,-.55,.55,1.65] : [-2.4,2.4]
+ return <group>
+  {spots.map((x,i)=><group key={x} position={[x,1.22,roomType==='bar'?-2.45:-2.15]}>
+   <mesh position={[0,.34,0]}><cylinderGeometry args={[.095,.12,.68,12]}/><meshStandardMaterial color={i%2?'#d99b42':'#5baf83'} roughness={.25} metalness={.15}/></mesh>
+   <mesh position={[0,.72,0]}><cylinderGeometry args={[.075,.095,.16,12]}/><meshStandardMaterial color={i%2?'#d99b42':'#5baf83'}/></mesh>
+   <mesh position={[.24,.13,.08]}><cylinderGeometry args={[.09,.075,.26,16]}/><meshStandardMaterial color="#9fe8ed" transparent opacity={.55} roughness={.12}/></mesh>
+   <mesh position={[.24,.28,.08]}><cylinderGeometry args={[.075,.075,.025,16]}/><meshStandardMaterial color="#f0d47a" emissive="#9a6725" emissiveIntensity={.18}/></mesh>
+  </group>)}
  </group>
 }
 
@@ -55,6 +92,7 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   <spotLight position={[0,9,-5]} angle={.8} penumbra={.8} intensity={high?65:30} color="#c05aff" castShadow={high}/>
   <pointLight position={[-5,3,1]} intensity={high?16:7} color="#42dfff"/>
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
+  <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.55} roughness={.38}/></mesh>
   <gridHelper args={[18,18,'#563675','#29213c']} position={[0,.005,0]}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
@@ -71,9 +109,16 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   {roomType === 'bar' && <group position={[0,0,-2]}><mesh position={[0,.7,-1]}><boxGeometry args={[5,.9,1.1]}/><meshStandardMaterial color="#5a3145" metalness={.3}/></mesh>{[-1.7,-.6,.6,1.7].map(x=><mesh key={x} position={[x,.45,.1]}><cylinderGeometry args={[.22,.22,.9,12]}/><meshStandardMaterial color="#c7ff38" metalness={.55}/></mesh>)}</group>}
   {roomType === 'lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.38,0]}><boxGeometry args={[2.7,.7,1.2]}/><meshStandardMaterial color="#34304e"/></mesh><mesh position={[0,.85,-.3]}><boxGeometry args={[2.7,.25,.45]}/><meshStandardMaterial color="#6a4a86"/></mesh></group>)}</group>}
   {roomType === 'vip_lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.45,0]}><boxGeometry args={[3,.85,1.4]}/><meshStandardMaterial color="#7b5630" metalness={.4}/></mesh><mesh position={[0,1,-.45]}><boxGeometry args={[3,.25,.35]}/><meshStandardMaterial color="#e7bd75" emissive="#8a632d" emissiveIntensity={.35}/></mesh></group>)}</group>}
+  {(roomType === 'bar' || roomType === 'lounge' || roomType === 'vip_lounge') && <BarDrinks roomType={roomType}/>}
   {roomType === 'dj_booth' && <group position={[0,0,-3.5]}><mesh position={[0,1.8,-1]}><boxGeometry args={[6,.12,.12]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={3}/></mesh><mesh position={[0,2.3,-1]}><boxGeometry args={[2.8,.7,.15]}/><meshStandardMaterial color="#1b1727" emissive="#8c3cff" emissiveIntensity={.5}/></mesh></group>}
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me/>
+  {[
+   {x:-5.9,z:-.2,dance:'sway' as Dance,skin:'deep' as Avatar['skin'],outfit:'street' as Avatar['outfit']},
+   {x:5.8,z:.5,dance:'hype' as Dance,skin:'tan' as Avatar['skin'],outfit:'vip' as Avatar['outfit']},
+   {x:-3.8,z:3.1,dance:'bounce' as Dance,skin:'light' as Avatar['skin'],outfit:'classic' as Avatar['outfit']},
+   {x:3.9,z:3.3,dance:'groove' as Dance,skin:'warm' as Avatar['skin'],outfit:'neon' as Avatar['outfit']},
+  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,skin:guest.skin,outfit:guest.outfit,dance:guest.dance}}/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   <OrbitControls target={[0,1,-.4]} enablePan={false} minDistance={8} maxDistance={17} minPolarAngle={.65} maxPolarAngle={1.35}/>
  </>

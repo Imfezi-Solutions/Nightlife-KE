@@ -22,13 +22,34 @@ export async function middleware(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
-  const protectedPath = request.nextUrl.pathname.startsWith('/discover') || request.nextUrl.pathname.startsWith('/onboarding')
+  const pathname = request.nextUrl.pathname
+  const protectedPath = pathname.startsWith('/discover') || pathname.startsWith('/onboarding')
   if (protectedPath && !user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('next', request.nextUrl.pathname)
+    redirectUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(redirectUrl)
   }
+
+  // A self-declaration permits discovery only. It never satisfies the separate
+  // age_verifications checks enforced by club RPCs, room access, and wallet APIs.
+  const declarationGatedPath = pathname.startsWith('/discover') || pathname.startsWith('/clubs') || pathname.startsWith('/wallet')
+  if (declarationGatedPath && user?.sub) {
+    const { data: declaration, error } = await supabase
+      .from('age_declarations')
+      .select('user_id')
+      .eq('user_id', user.sub)
+      .maybeSingle()
+
+    if (error || !declaration) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/age-gate'
+      redirectUrl.search = ''
+      redirectUrl.searchParams.set('next', pathname + request.nextUrl.search)
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
   return response
 }
 

@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      age_declarations: {
+        Row: { accepted: boolean; declared_at: string; policy_version: string; user_id: string }
+        Insert: { accepted?: boolean; declared_at?: string; policy_version: string; user_id: string }
+        Update: { accepted?: boolean; declared_at?: string; policy_version?: string; user_id?: string }
+        Relationships: []
+      }
       age_verifications: {
         Row: {
           created_at: string
