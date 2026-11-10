@@ -113,6 +113,12 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   {roomType === 'dj_booth' && <group position={[0,0,-3.5]}><mesh position={[0,1.8,-1]}><boxGeometry args={[6,.12,.12]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={3}/></mesh><mesh position={[0,2.3,-1]}><boxGeometry args={[2.8,.7,.15]}/><meshStandardMaterial color="#1b1727" emissive="#8c3cff" emissiveIntensity={.5}/></mesh></group>}
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me/>
+  {[
+   {x:-5.9,z:-.2,dance:'sway' as Dance,skin:'deep' as Avatar['skin'],outfit:'street' as Avatar['outfit']},
+   {x:5.8,z:.5,dance:'hype' as Dance,skin:'tan' as Avatar['skin'],outfit:'vip' as Avatar['outfit']},
+   {x:-3.8,z:3.1,dance:'bounce' as Dance,skin:'light' as Avatar['skin'],outfit:'classic' as Avatar['outfit']},
+   {x:3.9,z:3.3,dance:'groove' as Dance,skin:'warm' as Avatar['skin'],outfit:'neon' as Avatar['outfit']},
+  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,skin:guest.skin,outfit:guest.outfit,dance:guest.dance}}/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   <OrbitControls target={[0,1,-.4]} enablePan={false} minDistance={8} maxDistance={17} minPolarAngle={.65} maxPolarAngle={1.35}/>
  </>
