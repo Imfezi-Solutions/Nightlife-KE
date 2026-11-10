@@ -5,8 +5,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 const DIDIT_API_URL = 'https://verification.didit.me/v3/session/'
-const EXPECTED_WORKFLOW_ID = '604e2b8e-549a-4036-8611-d4b99c775e49'
-const EXPECTED_APPLICATION_ID = 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5'
+const DIDIT_CONFIG = {
+  sandbox: {
+    workflowId: '604e2b8e-549a-4036-8611-d4b99c775e49',
+    applicationId: 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5',
+  },
+  live: {
+    workflowId: 'bf5aa0b0-3bce-49b7-ab72-6611c1b53c6e',
+    applicationId: 'fde8a3cb-ace2-4a00-9d0d-e0f13d60b87b',
+  },
+} as const
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -27,14 +35,16 @@ export async function POST(request: Request) {
   const applicationId = process.env.DIDIT_APPLICATION_ID
   const environment = process.env.DIDIT_ENVIRONMENT
 
-  // This integration is deliberately pinned to the Didit Sandbox application.
+  const expected = environment === 'sandbox' || environment === 'live'
+    ? DIDIT_CONFIG[environment]
+    : null
+
+  // Each Vercel environment must use its matching Didit application and workflow.
   if (
     !apiKey ||
-    !workflowId ||
-    workflowId !== EXPECTED_WORKFLOW_ID ||
-    applicationId !== EXPECTED_APPLICATION_ID ||
-    environment !== 'sandbox' ||
-    !apiKey.startsWith('sk_test_')
+    !expected ||
+    workflowId !== expected.workflowId ||
+    applicationId !== expected.applicationId
   ) {
     return NextResponse.json({ error: 'Sandbox age verification is not fully configured. Please try again later.' }, { status: 503 })
   }
