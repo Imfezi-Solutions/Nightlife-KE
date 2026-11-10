@@ -4,8 +4,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
-const EXPECTED_WORKFLOW_ID = '604e2b8e-549a-4036-8611-d4b99c775e49'
-const EXPECTED_APPLICATION_ID = 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5'
+const DIDIT_CONFIG = {
+  sandbox: {
+    workflowId: '604e2b8e-549a-4036-8611-d4b99c775e49',
+    applicationId: 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5',
+  },
+  live: {
+    workflowId: 'bf5aa0b0-3bce-49b7-ab72-6611c1b53c6e',
+    applicationId: 'fde8a3cb-ace2-4a00-9d0d-e0f13d60b87b',
+  },
+} as const
 
 function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== 'object') {
@@ -71,12 +79,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid or expired webhook signature.' }, { status: 401 })
   }
 
+  const environment = process.env.DIDIT_ENVIRONMENT
+  const expected = environment === 'sandbox' || environment === 'live'
+    ? DIDIT_CONFIG[environment]
+    : null
+
   if (
-    payload.application_id !== EXPECTED_APPLICATION_ID ||
-    payload.environment !== 'sandbox' ||
-    payload.workflow_id !== EXPECTED_WORKFLOW_ID
+    !expected ||
+    payload.application_id !== expected.applicationId ||
+    payload.environment !== environment ||
+    payload.workflow_id !== expected.workflowId
   ) {
-    return NextResponse.json({ error: 'Webhook does not belong to the configured Didit Sandbox workflow.' }, { status: 403 })
+    return NextResponse.json({ error: 'Webhook does not belong to the configured Didit application and workflow.' }, { status: 403 })
   }
 
   if (payload.webhook_type !== 'status.updated') {
@@ -102,22 +116,26 @@ export async function POST(request: Request) {
   if (lookupError) return NextResponse.json({ error: 'Could not locate the verification record.' }, { status: 500 })
   if (!record) return NextResponse.json({ error: 'Verification session was not found.' }, { status: 404 })
 
-  // Didit's published Sandbox workflow applies the Kenya minimum-age-18 rule
-  // during document verification. Only an approved document result can unlock.
+  // The published Live workflow enforces Kenya's minimum age of 18 itself.
+  // Its response_attributes intentionally return no identity-document data,
+  // so a signed Approved verdict from that exact workflow is the age decision.
+  // Keep the stricter document-result check for the Sandbox integration.
   if (status === 'Approved') {
-    const decision = payload.decision
-    const idChecks = decision && typeof decision === 'object'
-      ? (decision as Record<string, unknown>).id_verifications
-      : null
-    const hasApprovedDocument = Array.isArray(idChecks) &&
-      idChecks.some((item) =>
-        item && typeof item === 'object' &&
-        (item as Record<string, unknown>).status === 'Approved' &&
-        (item as Record<string, unknown>).verification_method === 'document',
-      )
+    if (environment === 'sandbox') {
+      const decision = payload.decision
+      const idChecks = decision && typeof decision === 'object'
+        ? (decision as Record<string, unknown>).id_verifications
+        : null
+      const hasApprovedDocument = Array.isArray(idChecks) &&
+        idChecks.some((item) =>
+          item && typeof item === 'object' &&
+          (item as Record<string, unknown>).status === 'Approved' &&
+          (item as Record<string, unknown>).verification_method === 'document',
+        )
 
-    if (!hasApprovedDocument) {
-      return NextResponse.json({ received: true, pending: true })
+      if (!hasApprovedDocument) {
+        return NextResponse.json({ received: true, pending: true })
+      }
     }
 
     if (record.status !== 'pending') return NextResponse.json({ received: true, duplicate: true })
