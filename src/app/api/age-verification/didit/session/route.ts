@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       !response.ok ||
       !payload ||
       typeof payload.session_id !== 'string' ||
-      typeof payload.url !== 'string' ||
+      typeof payload.url !== 'string'
     ) {
       await admin.from('age_verifications').update({ status: 'expired' }).eq('id', record.id)
       return NextResponse.json({ error: 'Didit could not create a valid age-verification session. Please try again.' }, { status: 502 })
