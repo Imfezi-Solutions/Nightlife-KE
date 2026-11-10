@@ -7,43 +7,43 @@ export const runtime = 'nodejs'
 const EXPECTED_WORKFLOW_ID = '604e2b8e-549a-4036-8611-d4b99c775e49'
 const EXPECTED_APPLICATION_ID = 'c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5'
 
-function normalizeNumbers(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalizeNumbers)
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, child]) => [key, normalizeNumbers(child)]),
-    )
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    const encoded = JSON.stringify(value)
+    if (encoded === undefined) throw new Error('Unsupported JSON value')
+    return encoded
   }
-  if (typeof value === 'number' && Number.isInteger(value)) return Math.trunc(value)
-  return value
-}
 
-function sortKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortKeys)
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.keys(value as Record<string, unknown>)
-        .sort()
-        .map((key) => [key, sortKeys((value as Record<string, unknown>)[key])]),
-    )
+  if (Array.isArray(value)) {
+    return '[' + value.map(canonicalJson).join(',') + ']'
   }
-  return value
+
+  const object = value as Record<string, unknown>
+  return '{' + Object.keys(object).sort()
+    .map((key) => JSON.stringify(key) + ':' + canonicalJson(object[key]))
+    .join(',') + '}'
 }
 
 function validSignature(
   payload: Record<string, unknown>,
   supplied: string,
-  timestamp: string,
+  headerTimestamp: string,
   secret: string,
 ) {
-  if (!/^[a-f0-9]{64}$/i.test(supplied) || !/^\d+$/.test(timestamp)) return false
-  const timestampSeconds = Number(timestamp)
-  if (!Number.isSafeInteger(timestampSeconds) || Math.abs(Math.floor(Date.now() / 1000) - timestampSeconds) > 300) {
+  if (!/^[a-f0-9]{64}$/i.test(supplied) || !/^\d+$/.test(headerTimestamp)) return false
+
+  const bodyTimestamp = payload.timestamp
+  if (typeof bodyTimestamp !== 'number' || !Number.isSafeInteger(bodyTimestamp)) return false
+  if (String(bodyTimestamp) !== headerTimestamp) return false
+  if (Math.abs(Math.floor(Date.now() / 1000) - bodyTimestamp) > 300) return false
+
+  let canonical: string
+  try {
+    canonical = canonicalJson(payload)
+  } catch {
     return false
   }
 
-  // Didit V3 X-Signature-V2 signs compact JSON with recursively sorted keys.\n  // Never replace this with raw-body hashing: that is the legacy X-Signature algorithm.
-  const canonical = JSON.stringify(sortKeys(normalizeNumbers(payload))) ?? ''
   const expected = createHmac('sha256', secret).update(canonical, 'utf8').digest()
   const actual = Buffer.from(supplied, 'hex')
   return actual.length === expected.length && timingSafeEqual(actual, expected)
@@ -102,15 +102,19 @@ export async function POST(request: Request) {
   if (lookupError) return NextResponse.json({ error: 'Could not locate the verification record.' }, { status: 500 })
   if (!record) return NextResponse.json({ error: 'Verification session was not found.' }, { status: 404 })
 
-  // A verified result is trusted only when Didit's approved decision includes
-  // an approved ID-document check. The published workflow enforces minimum age 18.
+  // Didit's published Sandbox workflow applies the Kenya minimum-age-18 rule
+  // during document verification. Only an approved document result can unlock.
   if (status === 'Approved') {
     const decision = payload.decision
     const idChecks = decision && typeof decision === 'object'
       ? (decision as Record<string, unknown>).id_verifications
       : null
     const hasApprovedDocument = Array.isArray(idChecks) &&
-      idChecks.some((item) => item && typeof item === 'object' && (item as Record<string, unknown>).status === 'Approved')
+      idChecks.some((item) =>
+        item && typeof item === 'object' &&
+        (item as Record<string, unknown>).status === 'Approved' &&
+        (item as Record<string, unknown>).verification_method === 'document',
+      )
 
     if (!hasApprovedDocument) {
       return NextResponse.json({ received: true, pending: true })
@@ -153,6 +157,6 @@ export async function POST(request: Request) {
     if (error) return NextResponse.json({ error: 'Could not record the expired age check.' }, { status: 500 })
   }
 
-  // In Review, In Progress, Resubmitted and unknown states remain locked.
+  // Not Started, In Progress, In Review, Resubmitted and unknown states remain locked.
   return NextResponse.json({ received: true, pending: true })
 }
