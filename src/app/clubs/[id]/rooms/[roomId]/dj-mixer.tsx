@@ -88,7 +88,9 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
     audio.low.gain.setTargetAtTime(mix.bass, audio.context.currentTime, .04)
     audio.high.gain.setTargetAtTime(mix.treble, audio.context.currentTime, .04)
     audio.filter.frequency.setTargetAtTime(mix.filter, audio.context.currentTime, .04)
-  }, [mix.crossfader, mix.master, mix.bass, mix.treble, mix.filter])
+    audio.elementA.playbackRate = mix.bpm / 118
+    audio.elementB.playbackRate = mix.bpm / 118
+  }, [mix.crossfader, mix.master, mix.bass, mix.treble, mix.filter, mix.bpm])
 
   useEffect(() => {
     const audio = rig.current
@@ -184,6 +186,7 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
     } catch (e) {
       if (uploadedPath) {
         const supabase = createClient()
+        await supabase.from('dj_queue').delete().eq('provider_asset_id', uploadedPath).eq('room_id', roomId).then(()=>{})
         await supabase.storage.from('room-audio').remove([uploadedPath]).catch(()=>{})
       }
       setError(e instanceof Error ? e.message : 'Track upload failed. Your account must be an age-verified DJ or room owner/moderator.')
@@ -206,7 +209,7 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
         {(['A','B'] as const).map(deck => { const name = deck === 'A' ? mix.deckAName : mix.deckBName; const busy = uploading === deck; return <div key={deck} className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Deck {deck}</p><p className="mt-2 min-h-10 break-all text-sm text-white">{name || 'No track loaded'}</p><label className="mt-3 inline-flex cursor-pointer rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">{busy?'Uploading…':'Load audio track'}<input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4,audio/aac,.mp3,.wav,.ogg,.m4a,.aac" disabled={!!uploading} className="hidden" onChange={e=>{void uploadTrack(deck,e.target.files?.[0]);e.currentTarget.value=''}}/></label><p className="mt-2 text-[10px] text-zinc-500">Up to 25 MB · uploaded to this room for guests</p></div>})}
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="text-xs text-zinc-300">Tempo · {mix.bpm} BPM<input aria-label="Tempo" type="range" min="80" max="160" value={mix.bpm} onChange={e=>change('bpm',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
+        <label className="text-xs text-zinc-300">Tempo / playback speed · {mix.bpm}<input aria-label="Tempo" type="range" min="80" max="160" value={mix.bpm} onChange={e=>change('bpm',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
         <label className="text-xs text-zinc-300">Master volume · {Math.round(mix.master*100)}%<input aria-label="Master volume" type="range" min="0" max="1" step=".01" value={mix.master} onChange={e=>change('master',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
         <label className="text-xs text-zinc-300">Deck A / Deck B · {mix.crossfader.toFixed(2)}<input aria-label="Crossfader" type="range" min="-1" max="1" step=".01" value={mix.crossfader} onChange={e=>change('crossfader',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
         <label className="text-xs text-zinc-300">Low-pass filter · {Math.round(mix.filter)} Hz<input aria-label="Low-pass filter" type="range" min="250" max="18000" step="50" value={mix.filter} onChange={e=>change('filter',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
