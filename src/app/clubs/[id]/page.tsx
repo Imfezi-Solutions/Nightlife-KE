@@ -76,6 +76,7 @@ export default async function ClubPage({
       : Promise.resolve({ data: [] }),
   ])
   const profileById = new Map((memberProfiles ?? []).map((profile) => [profile.id, profile]))
+  const mainRoom = (rooms ?? []).find((room) => room.room_type === 'dancefloor') ?? (rooms ?? [])[0]
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-10">
@@ -134,20 +135,17 @@ export default async function ClubPage({
       )}
 
       <section className="mt-10">
-        <h2 className="text-2xl font-black">Explore the spaces</h2>
-        <p className="mt-2 text-sm text-zinc-400">Enter a room to chat and see who is there in real time.</p>
+        <h2 className="text-2xl font-black">Enter the shared club</h2>
+        <p className="mt-2 text-sm text-zinc-400">One continuous venue: move between the dancefloor, bar, lounge, VIP corner and DJ stage without leaving the world.</p>
         {isMember ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(rooms ?? []).map((room) => (
-              <Link key={room.id} href={`/clubs/${id}/rooms/${room.id}`} className="glass rounded-2xl p-6 transition hover:border-lime-300/40">
-                <p className="text-xs uppercase tracking-wider text-lime-300">{room.room_type.replace('_', ' ')}</p>
-                <h3 className="mt-3 text-xl font-bold">{room.name}</h3>
-                <p className="mt-2 text-sm text-zinc-500">Up to {room.capacity} people · Enter room →</p>
-              </Link>
-            ))}
-          </div>
+          mainRoom ? (
+            <Link href={`/clubs/${id}/rooms/${mainRoom.id}`} className="glass mt-5 flex items-center justify-between gap-4 rounded-2xl border border-lime-300/20 p-6 transition hover:border-lime-300/50">
+              <div><p className="text-xs font-bold uppercase tracking-wider text-lime-300">Shared venue · {club.capacity} club members</p><h3 className="mt-2 text-2xl font-black">Enter the club</h3><p className="mt-2 text-sm text-zinc-400">Your avatar moves through one persistent environment with everyone else.</p></div>
+              <span className="rounded-xl bg-lime-300 px-5 py-3 font-black text-black">Enter →</span>
+            </Link>
+          ) : <p className="mt-5 rounded-2xl border border-white/10 p-6 text-sm text-zinc-400">This club does not have an active venue yet.</p>
         ) : (
-          <p className="mt-5 rounded-2xl border border-white/10 p-6 text-sm text-zinc-400">Club rooms are visible to members only.</p>
+          <p className="mt-5 rounded-2xl border border-white/10 p-6 text-sm text-zinc-400">The club venue is visible to members only.</p>
         )}
       </section>
 
