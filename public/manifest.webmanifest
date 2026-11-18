@@ -1,13 +1,16 @@
 {
+  "id": "/",
   "name": "Nightlife KE",
   "short_name": "Nightlife KE",
-  "description": "Your night, your people.",
+  "description": "Your night, your people. Discover and enter virtual clubs across Kenya.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#08090d",
   "theme_color": "#08090d",
-  "orientation": "portrait-primary",
+  "orientation": "any",
+  "categories": ["entertainment", "social"],
   "icons": [
     {
       "src": "/icons/nightlife-ke.svg",
