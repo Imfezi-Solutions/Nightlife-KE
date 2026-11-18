@@ -9,10 +9,12 @@ create table if not exists public.club_item_inventory (
 );
 
 alter table public.club_item_inventory enable row level security;
+revoke all on table public.club_item_inventory from anon, authenticated;
+grant select on table public.club_item_inventory to authenticated;
 drop policy if exists "Users can view their own club inventory" on public.club_item_inventory;
 create policy "Users can view their own club inventory"
   on public.club_item_inventory for select
-  to authenticated using (auth.uid() = user_id);
+  to authenticated using ((select auth.uid()) = user_id);
 
 create or replace function public.purchase_club_item(
   p_club_id uuid,
@@ -21,7 +23,7 @@ create or replace function public.purchase_club_item(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -100,5 +102,5 @@ begin
 end;
 $$;
 
-revoke all on function public.purchase_club_item(uuid, uuid, text) from public;
+revoke all on function public.purchase_club_item(uuid, uuid, text) from public, anon, authenticated;
 grant execute on function public.purchase_club_item(uuid, uuid, text) to authenticated;
