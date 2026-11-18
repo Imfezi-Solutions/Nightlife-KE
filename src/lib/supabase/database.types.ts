@@ -673,6 +673,10 @@ export type Database = {
         Args: { p_club_id: string; p_invitation_code?: string }
         Returns: Json
       }
+      purchase_club_item: {
+        Args: { p_club_id: string; p_room_id: string; p_item_key: string }
+        Returns: Json
+      }
       preview_invite_club: {
         Args: { p_club_id: string; p_invitation_code: string }
         Returns: Json
