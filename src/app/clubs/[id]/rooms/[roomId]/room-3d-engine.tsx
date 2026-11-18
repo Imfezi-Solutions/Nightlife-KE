@@ -147,7 +147,7 @@ function LuxuryClubArchitecture() {
   {[-5.8,0,5.8].map(z=><mesh key={'crossbeam-'+z} position={[0,4.72,z]}><boxGeometry args={[17.7,.16,.16]}/><meshStandardMaterial color={gold} metalness={.75}/></mesh>)}
   {/* Tall fluted columns and brass bases */}
   {[-8.15,8.15].flatMap(x=>[-5.5,0,5.5].map(z=><group key={'column-'+x+'-'+z} position={[x,0,z]}>
-   <mesh position={[0,2.25,0]}><cylinderGeometry args={[.3,.38,4.5,20]}/><meshStandardMaterial color={wall} metalness:.25} roughness={.48}/></mesh>
+   <mesh position={[0,2.25,0]}><cylinderGeometry args={[.3,.38,4.5,20]}/><meshStandardMaterial color={wall} metalness={.25} roughness={.48}/></mesh>
    {[-.18,-.06,.06,.18].map(dx=><mesh key={dx} position={[dx,2.25,.28]}><boxGeometry args={[.035,4.15,.035]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>)}
    <mesh position={[0,.16,0]}><cylinderGeometry args={[.48,.48,.24,24]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
    <mesh position={[0,4.48,0]}><cylinderGeometry args={[.48,.38,.2,24]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
