@@ -7,6 +7,8 @@ export const metadata: Metadata = {
  description: 'Discover Kenyan virtual clubs, meet people and experience nightlife together.',
  manifest: '/manifest.webmanifest',
  applicationName: 'Nightlife KE',
+ appleWebApp: { capable: true, title: 'Nightlife KE', statusBarStyle: 'black-translucent' },
+ icons: { icon: '/icons/nightlife-ke.svg', apple: '/icons/nightlife-ke.svg' },
 }
 export const viewport: Viewport = { themeColor: '#08090d', width: 'device-width', initialScale: 1 }
 
