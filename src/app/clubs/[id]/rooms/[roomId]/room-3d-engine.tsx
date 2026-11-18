@@ -42,16 +42,16 @@ function Dancer({ position, avatar, me=false }: { position:Position; avatar:Avat
   if (rightLeg.current) rightLeg.current.rotation.x = Math.sin(phase + Math.PI) * .24
  })
  return <group ref={ref} position={[position.x,0,position.z]}>
-  <mesh position={[0,1.55,0]} castShadow><sphereGeometry args={[.27,16,16]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
-  {avatar.hair === 'curly' && <group>{[-.16,-.05,.06,.17].map((x,i)=><mesh key={i} position={[x,1.78+(i%2)*.04,-.03]}><sphereGeometry args={[.13,10,10]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
-  {avatar.hair === 'fade' && <mesh position={[0,1.78,-.02]}><sphereGeometry args={[.25,14,10,0,Math.PI*2,0,Math.PI*.45]}/><meshStandardMaterial color="#20151f"/></mesh>}
-  {avatar.hair === 'short' && <mesh position={[0,1.75,-.02]}><sphereGeometry args={[.25,14,10,0,Math.PI*2,0,Math.PI*.32]}/><meshStandardMaterial color="#20151f"/></mesh>}
-  {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.035,.34,4,6]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
-  <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.29,.55,4,8]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
-  <group ref={leftArm} position={[-.37,1.03,0]} rotation={[0,0,-.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
-  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.45,4,6]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
-  <group ref={leftLeg} position={[-.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh></group>
-  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.1,.52,4,6]}/><meshStandardMaterial color="#242330"/></mesh></group>
+  <mesh position={[0,1.55,0]} castShadow><boxGeometry args={[.54,.54,.46]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
+  {avatar.hair === 'curly' && <group>{[-.16,-.05,.06,.17].map((x,i)=><mesh key={i} position={[x,1.78+(i%2)*.04,-.03]}><boxGeometry args={[.22,.16,.22]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
+  {avatar.hair === 'fade' && <mesh position={[0,1.78,-.02]}><boxGeometry args={[.5,.12,.48]}/><meshStandardMaterial color="#20151f"/></mesh>}
+  {avatar.hair === 'short' && <mesh position={[0,1.75,-.02]}><boxGeometry args={[.5,.09,.48]}/><meshStandardMaterial color="#20151f"/></mesh>}
+  {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><boxGeometry args={[.07,.38,.08]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
+  <mesh position={[0,1.02,0]} castShadow><boxGeometry args={[.62,.68,.38]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
+  <group ref={leftArm} position={[-.37,1.03,0]} rotation={[0,0,-.35]}><mesh position={[0,-.22,0]}><boxGeometry args={[.18,.55,.2]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
+  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><boxGeometry args={[.18,.55,.2]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
+  <group ref={leftLeg} position={[-.15,.65,0]}><mesh position={[0,-.25,0]}><boxGeometry args={[.22,.58,.25]}/><meshStandardMaterial color="#242330"/></mesh></group>
+  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><boxGeometry args={[.22,.58,.25]}/><meshStandardMaterial color="#242330"/></mesh></group>
   {me && <mesh position={[0,2.08,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
  </group>
 }
@@ -189,7 +189,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
  function dance(d:Dance){setPosition(current=>({...current,dance:d}));setAvatar(a=>({...a,dance:d}))}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Real-time 3D venue</p><h2 className="mt-1 text-xl font-black">The dancefloor</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
+   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Block-style 3D venue</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
    <label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label>
   </header>
   <div className="relative h-[420px] sm:h-[540px]">
@@ -205,7 +205,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
    </div>
   </div>
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
-   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Your position is shared with verified room members</p></div>
+   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Your avatar moves live with verified room members</p></div>
    <div className="flex flex-wrap gap-2">{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   {editing&&<div className="grid gap-4 p-5 sm:grid-cols-2">{(Object.keys(choices) as (keyof Avatar)[]).map(key=><label key={key} className="text-xs font-bold capitalize text-zinc-400">{key}<select value={avatar[key]} onChange={e=>setAvatar(a=>({...a,[key]:e.target.value} as Avatar))} className="mt-2 w-full rounded-xl border border-white/10 bg-[#12141e] px-4 py-3 text-sm text-white">{choices[key].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>)}<div className="sm:col-span-2"><button onClick={()=>void save()} disabled={saving} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-black disabled:opacity-50">{saving?'Saving…':'Save character'}</button></div></div>}
