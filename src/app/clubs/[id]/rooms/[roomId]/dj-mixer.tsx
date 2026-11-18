@@ -142,11 +142,11 @@ export default function DJMixer({ mix, isDJ, djName, onClaim, onMixChange }: Pro
       <div className="flex flex-wrap gap-2">
         {!audioEnabled && <button onClick={()=>void enableAudio()} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white">Enable room audio</button>}
         {!isDJ && <button onClick={()=>{onClaim();setOpen(true)}} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">Become the DJ</button>}
-        {isDJ && <button onClick={()=>setOpen(v=>!v)} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">{open ? 'Close DJ studio' : 'Open DJ studio'}</button>}
+        {isDJ && <><button onClick={()=>setOpen(v=>!v)} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">{open ? 'Close DJ studio' : 'Open DJ studio'}</button><button onClick={()=>onMixChange({...mix,playing:!mix.playing})} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs text-fuchsia-100">{mix.playing?'Pause room music':'Resume room music'}</button></>}
       </div>
     </div>
-    {open && isDJ && <div className="mt-4 rounded-2xl border border-fuchsia-300/20 bg-[#100e1b] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Nightlife DJ studio</p><p className="mt-1 text-xs text-zinc-500">Two live synth decks · beat controls · EQ · crossfader</p></div><button onClick={()=>void togglePlayback()} className={`rounded-xl px-5 py-3 text-sm font-black ${mix.playing?'bg-rose-400 text-black':'bg-lime-300 text-black'}`}>{mix.playing?'Stop mix':'Play live mix'}</button></div>
+    {open && isDJ && <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-fuchsia-300/30 bg-[#100e1b] p-5 shadow-2xl">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Nightlife DJ studio</p><p className="mt-1 text-xs text-zinc-500">Separate mixer window · two live synth decks · EQ · crossfader</p></div><div className="flex gap-2"><button onClick={()=>setOpen(false)} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-zinc-300">Close window</button><button onClick={()=>void togglePlayback()} className={`rounded-xl px-5 py-3 text-sm font-black ${mix.playing?'bg-rose-400 text-black':'bg-lime-300 text-black'}`}>{mix.playing?'Stop mix':'Play live mix'}</button></div></div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-xs text-zinc-300">Tempo · {mix.bpm} BPM<input aria-label="Tempo" type="range" min="80" max="160" value={mix.bpm} onChange={e=>change('bpm',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
         <label className="text-xs text-zinc-300">Master volume · {Math.round(mix.master*100)}%<input aria-label="Master volume" type="range" min="0" max="1" step=".01" value={mix.master} onChange={e=>change('master',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
@@ -157,6 +157,6 @@ export default function DJMixer({ mix, isDJ, djName, onClaim, onMixChange }: Pro
       </div>
       <div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>onMixChange({...mix,bpm:118,crossfader:0,master:.72,bass:0,treble:0,filter:18000})} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-zinc-300">Reset mixer</button><span className="self-center text-[11px] text-zinc-500">Other guests must enable room audio once to hear the live mix.</span></div>
       {localError&&<p className="mt-3 text-xs text-rose-300">{localError}</p>}
-    </div>}
+    </div></div>}
   </div>
 }
