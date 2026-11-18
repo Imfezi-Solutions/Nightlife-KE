@@ -108,39 +108,30 @@ function SpeakerStack({position}:{position:[number,number,number]}) {
 function Plant({position}:{position:[number,number,number]}) {
  return <group position={position}><mesh position={[0,.28,0]}><cylinderGeometry args={[.28,.22,.55,16]}/><meshStandardMaterial color="#8d563a"/></mesh>{[0,1,2,3,4].map(i=><mesh key={i} position={[Math.sin(i*1.25)*.18,.8+(i%2)*.12,Math.cos(i*1.25)*.16]}><coneGeometry args={[.18,.65,7]}/><meshStandardMaterial color="#276b4c"/></mesh>)}</group>
 }
-function RoomFurnishings({roomType}:{roomType:string}) {
- if(roomType==='bar') return <group>
-  <mesh position={[0,.65,-2.15]} castShadow><boxGeometry args={[6.8,1.25,1.35]}/><meshStandardMaterial color="#402b3b" metalness={.38}/></mesh>
-  <mesh position={[0,1.3,-2.15]}><boxGeometry args={[6.95,.12,1.42]}/><meshStandardMaterial color="#c99b62" metalness={.65}/></mesh>
-  {[-2.5,-1.25,0,1.25,2.5].map(x=><Stool key={x} position={[x,.02,-.95]}/>)}
-  <mesh position={[0,2.4,-5.8]}><boxGeometry args={[5.8,1.5,.25]}/><meshStandardMaterial color="#211a2b"/></mesh>
-  {[-2,-1,0,1,2].map(x=><mesh key={x} position={[x,2.45,-5.62]}><boxGeometry args={[.08,1.2,.05]}/><meshStandardMaterial color="#d7a96d" emissive="#8d542a" emissiveIntensity={.5}/></mesh>)}
-  <Plant position={[-7,0,-4]}/><Plant position={[7,0,-4]}/>
- </group>
- if(roomType==='lounge') return <group>
-  <Sofa position={[-3.7,0,-2.4]}/><Sofa position={[3.7,0,-2.4]}/><Sofa position={[-3.7,0,2.2]} color="#263c49"/><Sofa position={[3.7,0,2.2]} color="#263c49"/>
-  <CocktailTable position={[-3.7,0,-.7]}/><CocktailTable position={[3.7,0,-.7]}/><Plant position={[-7,0,-5]}/><Plant position={[7,0,-5]}/>
- </group>
- if(roomType==='vip_lounge') return <group>
-  {[-4.1,0,4.1].map(x=><group key={x}><Sofa position={[x,0,-2.1]} color="#684b32" width={2.5}/><CocktailTable position={[x,0,-.45]}/><mesh position={[x,1.1,-3]}><boxGeometry args={[2.55,.12,.08]}/><meshStandardMaterial color="#e4c17d" emissive="#d4a85d" emissiveIntensity={.8}/></mesh></group>)}
-  <Plant position={[-6.8,0,-4.8]}/><Plant position={[6.8,0,-4.8]}/>
- </group>
- if(roomType==='dj_booth') return <group>
-  <mesh position={[0,.8,-3.6]} castShadow><boxGeometry args={[6.2,1.6,1.8]}/><meshStandardMaterial color="#171522" metalness={.65}/></mesh>
-  <mesh position={[0,1.64,-3.6]}><boxGeometry args={[6.3,.12,1.9]}/><meshStandardMaterial color="#9b42d4" emissive="#8b32d1" emissiveIntensity={1.5}/></mesh>
-  {[-1.7,0,1.7].map(x=><group key={x} position={[x,1.78,-3.6]}><mesh><cylinderGeometry args={[.38,.38,.08,32]}/><meshStandardMaterial color="#24212e"/></mesh><mesh position={[0,.06,0]}><cylinderGeometry args={[.16,.16,.025,32]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={1.5}/></mesh></group>)}
-  <SpeakerStack position={[-4.5,0,-3.7]}/><SpeakerStack position={[4.5,0,-3.7]}/>
- </group>
+function RoomFurnishings({roomType:_roomType}:{roomType:string}) {
  return <group>
-  <SpeakerStack position={[-7,0,-4.6]}/><SpeakerStack position={[7,0,-4.6]}/>
-  <Sofa position={[-6.1,0,3.2]} color="#30233d" width={2.2}/><Sofa position={[6.1,0,3.2]} color="#30233d" width={2.2}/>
-  <CocktailTable position={[-6.1,0,4.25]}/><CocktailTable position={[6.1,0,4.25]}/>
+  <group position={[-5.1,0,0]} scale={.72}>
+   <mesh position={[0,.65,-2.15]} castShadow><boxGeometry args={[6.8,1.25,1.35]}/><meshStandardMaterial color="#402b3b" metalness={.38}/></mesh>
+   <mesh position={[0,1.3,-2.15]}><boxGeometry args={[6.95,.12,1.42]}/><meshStandardMaterial color="#c99b62" metalness={.65}/></mesh>
+   {[-2.5,-1.25,0,1.25,2.5].map(x=><Stool key={x} position={[x,.02,-.95]}/>)}
+   <mesh position={[0,2.4,-5.8]}><boxGeometry args={[5.8,1.5,.25]}/><meshStandardMaterial color="#211a2b"/></mesh>
+   {[-2,-1,0,1,2].map(x=><mesh key={x} position={[x,2.45,-5.62]}><boxGeometry args={[.08,1.2,.05]}/><meshStandardMaterial color="#d7a96d" emissive="#8d542a" emissiveIntensity={.5}/></mesh>)}
+   <BarDrinks roomType="bar"/>
+  </group>
+  <group position={[5.1,0,0]} scale={.72}>
+   <Sofa position={[-3.7,0,-2.4]}/><Sofa position={[3.7,0,-2.4]}/>
+   <Sofa position={[-3.7,0,2.2]} color="#263c49"/><Sofa position={[3.7,0,2.2]} color="#263c49"/>
+   <CocktailTable position={[-3.7,0,-.7]}/><CocktailTable position={[3.7,0,-.7]}/>
+  </group>
+  <group position={[0,0,4.0]} scale={.55}>
+   {[-4.1,0,4.1].map(x=><group key={x}><Sofa position={[x,0,-2.1]} color="#684b32" width={2.5}/><CocktailTable position={[x,0,-.45]}/><mesh position={[x,1.1,-3]}><boxGeometry args={[2.55,.12,.08]}/><meshStandardMaterial color="#e4c17d" emissive="#d4a85d" emissiveIntensity={.8}/></mesh></group>)}
+  </group>
   <Plant position={[-8,0,-5.5]}/><Plant position={[8,0,-5.5]}/>
+  <SpeakerStack position={[-7.5,0,-4.6]}/><SpeakerStack position={[7.5,0,-4.6]}/>
   <mesh position={[0,.015,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[1.5,1.58,64]}/><meshBasicMaterial color="#c45cff"/></mesh>
   <mesh position={[0,.018,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[3,3.06,64]}/><meshBasicMaterial color="#38dfff"/></mesh>
  </group>
 }
-
 function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string }) {
  return <>
   <color attach="background" args={['#080711']}/>
@@ -181,9 +172,10 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
  </>
 }
 
-export default function Room3DEngine({roomId,userId,displayName,initialConfig,roomType}:{roomId:string;userId:string;displayName:string;initialConfig:Json|null;roomType:string}) {
+export default function Room3DEngine({roomId,clubId,userId,displayName,initialConfig,roomType}:{roomId:string;clubId:string;userId:string;displayName:string;initialConfig:Json|null;roomType:string}) {
  const [avatar,setAvatar]=useState<Avatar>(()=>({...defaults,...(initialConfig && typeof initialConfig==='object' && !Array.isArray(initialConfig)?initialConfig:{})}) as Avatar)
- const [position,setPosition]=useState<Position>({x:0,z:2.2,dance:defaults.dance})
+ const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,7),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
+ const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
  const [quality,setQuality]=useState<'low'|'high'>('low')
  const [editing,setEditing]=useState(false)
@@ -196,6 +188,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
   if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,skin:a.skin,hair:a.hair,outfit:a.outfit})}
  },[])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
+ useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
  const move=useCallback((dx:number,dz:number)=>{
   setPosition(current=>{
    const x=clamp(current.x+dx,-7,7)
@@ -208,7 +201,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
  },[])
  useEffect(()=>{
   const supabase=createClient()
-  const channel=supabase.channel('club-movement:'+roomId,{config:{private:true,presence:{key:userId}}})
+  const channel=supabase.channel('club-world:'+clubId,{config:{private:true,presence:{key:userId}}})
   channelRef.current=channel
   const sync=()=>{
    const state=channel.presenceState() as Record<string,Array<Record<string,unknown>>>
@@ -232,7 +225,7 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
   return ()=>{channelRef.current=null;void supabase.removeChannel(channel)}
   // Connect once per authenticated room identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps
- },[roomId,userId])
+ },[clubId,userId])
  useEffect(()=>{
   const keys:Record<string,[number,number]>={ArrowUp:[0,-.35],w:[0,-.35],W:[0,-.35],ArrowDown:[0,.35],s:[0,.35],S:[0,.35],ArrowLeft:[-.35,0],a:[-.35,0],A:[-.35,0],ArrowRight:[.35,0],d:[.35,0],D:[.35,0]}
   const onKey=(e:KeyboardEvent)=>{if(['INPUT','TEXTAREA','SELECT'].includes((e.target as HTMLElement|null)?.tagName??''))return;const v=keys[e.key];if(v){e.preventDefault();move(v[0],v[1])}}
@@ -251,9 +244,10 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
   </header>
   <div className="relative h-[420px] sm:h-[540px]">
    <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,7.5,12.5],fov:48}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
-    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType={roomType}/>
+    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType="club"/>
    </Canvas>
    <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">WASD / arrows to move · drag to look</div>
+   {introOpen&&<div className="absolute inset-0 z-20 flex items-center justify-center bg-[#080711]/75 p-5 backdrop-blur-sm"><div className="max-w-lg rounded-3xl border border-lime-200/20 bg-[#11101d]/95 p-7 shadow-2xl"><p className="text-[10px] font-black uppercase tracking-[.3em] text-lime-300">Nightlife KE presents</p><h2 className="mt-3 text-3xl font-black">The night is yours.</h2><p className="mt-4 text-sm leading-7 text-zinc-300">When the city lights come on, the doors of this club open. The DJ sets the rhythm, the bar is ready, and familiar faces meet new ones. Walk from the dancefloor to the bar, settle into the lounge or find the VIP corner. This is one club, one shared night — the people make the memories.</p><p className="mt-4 text-xs text-zinc-500">Your character and the other guests move through the same persistent venue.</p><button onClick={()=>setIntroOpen(false)} className="mt-6 w-full rounded-xl bg-lime-300 px-5 py-3 font-black text-black">Enter the club</button></div></div>}
    <div className="absolute bottom-4 right-4 grid grid-cols-3 gap-1.5 sm:hidden">
     <span/><button aria-label="Move forward" onClick={()=>move(0,-.7)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">↑</button><span/>
     <button aria-label="Move left" onClick={()=>move(-.7,0)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">←</button>
@@ -262,8 +256,8 @@ export default function Room3DEngine({roomId,userId,displayName,initialConfig,ro
    </div>
   </div>
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
-   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Your avatar moves live with verified room members</p></div>
-   <div className="flex flex-wrap gap-2">{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
+   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">One shared club world · {remotes.length+1} people connected</p></div>
+   <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'VIP',x:0,z:4.5},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   {editing&&<div className="grid gap-4 p-5 sm:grid-cols-2">{(Object.keys(choices) as (keyof Avatar)[]).map(key=><label key={key} className="text-xs font-bold capitalize text-zinc-400">{key}<select value={avatar[key]} onChange={e=>setAvatar(a=>({...a,[key]:e.target.value} as Avatar))} className="mt-2 w-full rounded-xl border border-white/10 bg-[#12141e] px-4 py-3 text-sm text-white">{choices[key].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>)}<div className="sm:col-span-2"><button onClick={()=>void save()} disabled={saving} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-black disabled:opacity-50">{saving?'Saving…':'Save character'}</button></div></div>}
  </section>
