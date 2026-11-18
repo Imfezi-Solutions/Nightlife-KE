@@ -23,10 +23,10 @@ const clamp = (n:number,min:number,max:number) => Math.max(min,Math.min(max,n))
 function HumanModel({person,dance,seated}:{person:Avatar['person'];dance:Dance;seated:boolean}) {
  const group=useRef<Group>(null)
  const models:Record<Avatar['person'],string>={
-  sophia:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/sophia_formal.glb',
-  daniel:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/daniel_formal.glb',
-  priya:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/priya_casual.glb',
-  carlos:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/carlos_casual.glb',
+  sophia:'https://cdn.jsdelivr.net/gh/memoriesrohit/avatar-studio@main/models/sophia_formal.glb',
+  daniel:'https://cdn.jsdelivr.net/gh/memoriesrohit/avatar-studio@main/models/daniel_formal.glb',
+  priya:'https://cdn.jsdelivr.net/gh/memoriesrohit/avatar-studio@main/models/priya_casual.glb',
+  carlos:'https://cdn.jsdelivr.net/gh/memoriesrohit/avatar-studio@main/models/carlos_casual.glb',
  }
  const {scene,animations}=useGLTF(models[person])
  const clip=seated?'Idle':dance==='hype'?'Cheer':dance==='bounce'?'Clap':dance==='groove'?'Clap':'Idle'
@@ -48,7 +48,7 @@ function Dancer({ position, avatar, me=false, hidden=false }: { position:Positio
  if(hidden)return null
  const person=['sophia','daniel','priya','carlos'].includes(avatar.person)?avatar.person:'daniel'
  return <group ref={ref} position={[position.x,0,position.z]}>
-  <Suspense fallback={<mesh position={[0,.9,0]}><capsuleGeometry args={[.28,.8,6,12]}/><meshStandardMaterial color="#9a8ba5"/></mesh>}>
+  <Suspense fallback={null}>
    <group rotation={[0,Math.PI,0]}><HumanModel person={person} dance={position.dance} seated={!!position.seated}/></group>
   </Suspense>
   {me&&<mesh position={[0,2.05,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
