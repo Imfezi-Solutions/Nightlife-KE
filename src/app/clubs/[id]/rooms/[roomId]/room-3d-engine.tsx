@@ -15,9 +15,6 @@ const defaults: Avatar = { person:'daniel', skin:'warm', hair:'curly', outfit:'n
 const skin: Record<Avatar['skin'],string> = { warm:'#a96745', deep:'#613b2d', light:'#e0ad83', tan:'#c9875c' }
 const clothes: Record<Avatar['outfit'],string> = { neon:'#c7ff38', street:'#6478ff', vip:'#e7bd75', classic:'#d5d9e2' }
 const choices = {
- skin:[['warm','Warm brown'],['deep','Deep brown'],['light','Light'],['tan','Tan']],
- hair:[['curly','Curly'],['fade','Fade'],['braids','Braids'],['short','Short']],
- outfit:[['neon','Neon'],['street','Streetwear'],['vip','VIP'],['classic','Classic']],
  dance:[['groove','Groove'],['bounce','Bounce'],['sway','Sway'],['hype','Hype']],
  person:[['sophia','Sophia'],['daniel','Daniel'],['priya','Priya'],['carlos','Carlos']],
 } as const
@@ -242,13 +239,13 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
 
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me hidden={view==='first'}/>
-  <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,skin:'deep',hair:'fade',outfit:'classic',dance:'sway'}}/>
+  <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,person:'sophia',dance:'sway'}}/>
   {[
-   {x:-5.9,z:-.2,dance:'sway' as Dance,skin:'deep' as Avatar['skin'],outfit:'street' as Avatar['outfit']},
-   {x:5.8,z:.5,dance:'hype' as Dance,skin:'tan' as Avatar['skin'],outfit:'vip' as Avatar['outfit']},
-   {x:-3.8,z:3.1,dance:'bounce' as Dance,skin:'light' as Avatar['skin'],outfit:'classic' as Avatar['outfit']},
-   {x:3.9,z:3.3,dance:'groove' as Dance,skin:'warm' as Avatar['skin'],outfit:'neon' as Avatar['outfit']},
-  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,skin:guest.skin,outfit:guest.outfit,dance:guest.dance}}/>)}
+   {x:-5.9,z:-.2,dance:'sway' as Dance,person:'priya' as Avatar['person']},
+   {x:5.8,z:.5,dance:'hype' as Dance,person:'carlos' as Avatar['person']},
+   {x:-3.8,z:3.1,dance:'bounce' as Dance,person:'sophia' as Avatar['person']},
+   {x:3.9,z:3.3,dance:'groove' as Dance,person:'daniel' as Avatar['person']},
+  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}}/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   <FollowCamera position={position} mode={view}/>
  </>
@@ -278,7 +275,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const lastSent=useRef(0)
  const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
-  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit})}
+  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit,person:a.person})}
  },[])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
