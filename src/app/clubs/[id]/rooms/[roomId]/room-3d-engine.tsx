@@ -83,6 +83,64 @@ function BarDrinks({ roomType }: { roomType:string }) {
  </group>
 }
 
+function Sofa({position,color='#342843',width=2.8}:{position:[number,number,number];color?:string;width?:number}) {
+ return <group position={position}>
+  <mesh position={[0,.42,0]} castShadow><boxGeometry args={[width,.62,.9]}/><meshStandardMaterial color={color}/></mesh>
+  <mesh position={[0,.83,-.34]}><boxGeometry args={[width,.42,.22]}/><meshStandardMaterial color={color}/></mesh>
+  {[-width*.36,width*.36].map(x=><mesh key={x} position={[x,.77,0]}><boxGeometry args={[.16,.55,.94]}/><meshStandardMaterial color={color}/></mesh>)}
+  {[-.55,.55].map(x=><mesh key={x} position={[x,.76,.02]}><boxGeometry args={[.72,.12,.66]}/><meshStandardMaterial color="#a88ab7"/></mesh>)}
+ </group>
+}
+function CocktailTable({position}:{position:[number,number,number]}) {
+ return <group position={position}>
+  <mesh position={[0,.65,0]} castShadow><cylinderGeometry args={[.62,.7,.12,32]}/><meshStandardMaterial color="#292633" metalness={.65}/></mesh>
+  <mesh position={[0,.32,0]}><cylinderGeometry args={[.09,.16,.58,12]}/><meshStandardMaterial color="#b58b55" metalness={.7}/></mesh>
+  <mesh position={[0,.06,0]}><cylinderGeometry args={[.38,.38,.08,24]}/><meshStandardMaterial color="#302b38"/></mesh>
+  <mesh position={[.22,.75,.06]}><cylinderGeometry args={[.07,.08,.2,12]}/><meshStandardMaterial color="#62c7a4"/></mesh>
+ </group>
+}
+function Stool({position}:{position:[number,number,number]}) {
+ return <group position={position}><mesh position={[0,.58,0]}><cylinderGeometry args={[.28,.28,.13,20]}/><meshStandardMaterial color="#b98d55"/></mesh><mesh position={[0,.29,0]}><cylinderGeometry args={[.055,.07,.5,12]}/><meshStandardMaterial color="#25232d" metalness={.7}/></mesh><mesh position={[0,.06,0]}><cylinderGeometry args={[.24,.24,.08,20]}/><meshStandardMaterial color="#25232d"/></mesh></group>
+}
+function SpeakerStack({position}:{position:[number,number,number]}) {
+ return <group position={position}><mesh position={[0,1.05,0]} castShadow><boxGeometry args={[.85,2.1,.7]}/><meshStandardMaterial color="#101018"/></mesh>{[.52,1.48].map((y,i)=><group key={y} position={[0,y,.36]}><mesh><cylinderGeometry args={[i?.22:.29,i?.22:.29,.08,24]}/><meshStandardMaterial color="#242330"/></mesh><mesh position={[0,0,.05]}><cylinderGeometry args={[i?.12:.17,i?.12:.17,.025,24]}/><meshStandardMaterial color={i?'#a94cff':'#38dfff'} emissive={i?'#a94cff':'#38dfff'} emissiveIntensity={1.5}/></mesh></group>)}</group>
+}
+function Plant({position}:{position:[number,number,number]}) {
+ return <group position={position}><mesh position={[0,.28,0]}><cylinderGeometry args={[.28,.22,.55,16]}/><meshStandardMaterial color="#8d563a"/></mesh>{[0,1,2,3,4].map(i=><mesh key={i} position={[Math.sin(i*1.25)*.18,.8+(i%2)*.12,Math.cos(i*1.25)*.16]}><coneGeometry args={[.18,.65,7]}/><meshStandardMaterial color="#276b4c"/></mesh>)}</group>
+}
+function RoomFurnishings({roomType}:{roomType:string}) {
+ if(roomType==='bar') return <group>
+  <mesh position={[0,.65,-2.15]} castShadow><boxGeometry args={[6.8,1.25,1.35]}/><meshStandardMaterial color="#402b3b" metalness={.38}/></mesh>
+  <mesh position={[0,1.3,-2.15]}><boxGeometry args={[6.95,.12,1.42]}/><meshStandardMaterial color="#c99b62" metalness={.65}/></mesh>
+  {[-2.5,-1.25,0,1.25,2.5].map(x=><Stool key={x} position={[x,.02,-.95]}/>)}
+  <mesh position={[0,2.4,-5.8]}><boxGeometry args={[5.8,1.5,.25]}/><meshStandardMaterial color="#211a2b"/></mesh>
+  {[-2,-1,0,1,2].map(x=><mesh key={x} position={[x,2.45,-5.62]}><boxGeometry args={[.08,1.2,.05]}/><meshStandardMaterial color="#d7a96d" emissive="#8d542a" emissiveIntensity={.5}/></mesh>)}
+  <Plant position={[-7,0,-4]}/><Plant position={[7,0,-4]}/>
+ </group>
+ if(roomType==='lounge') return <group>
+  <Sofa position={[-3.7,0,-2.4]}/><Sofa position={[3.7,0,-2.4]}/><Sofa position={[-3.7,0,2.2]} color="#263c49"/><Sofa position={[3.7,0,2.2]} color="#263c49"/>
+  <CocktailTable position={[-3.7,0,-.7]}/><CocktailTable position={[3.7,0,-.7]}/><Plant position={[-7,0,-5]}/><Plant position={[7,0,-5]}/>
+ </group>
+ if(roomType==='vip_lounge') return <group>
+  {[-4.1,0,4.1].map(x=><group key={x}><Sofa position={[x,0,-2.1]} color="#684b32" width={2.5}/><CocktailTable position={[x,0,-.45]}/><mesh position={[x,1.1,-3]}><boxGeometry args={[2.55,.12,.08]}/><meshStandardMaterial color="#e4c17d" emissive="#d4a85d" emissiveIntensity={.8}/></mesh></group>)}
+  <Plant position={[-6.8,0,-4.8]}/><Plant position={[6.8,0,-4.8]}/>
+ </group>
+ if(roomType==='dj_booth') return <group>
+  <mesh position={[0,.8,-3.6]} castShadow><boxGeometry args={[6.2,1.6,1.8]}/><meshStandardMaterial color="#171522" metalness={.65}/></mesh>
+  <mesh position={[0,1.64,-3.6]}><boxGeometry args={[6.3,.12,1.9]}/><meshStandardMaterial color="#9b42d4" emissive="#8b32d1" emissiveIntensity={1.5}/></mesh>
+  {[-1.7,0,1.7].map(x=><group key={x} position={[x,1.78,-3.6]}><mesh><cylinderGeometry args={[.38,.38,.08,32]}/><meshStandardMaterial color="#24212e"/></mesh><mesh position={[0,.06,0]}><cylinderGeometry args={[.16,.16,.025,32]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={1.5}/></mesh></group>)}
+  <SpeakerStack position={[-4.5,0,-3.7]}/><SpeakerStack position={[4.5,0,-3.7]}/>
+ </group>
+ return <group>
+  <SpeakerStack position={[-7,0,-4.6]}/><SpeakerStack position={[7,0,-4.6]}/>
+  <Sofa position={[-6.1,0,3.2]} color="#30233d" width={2.2}/><Sofa position={[6.1,0,3.2]} color="#30233d" width={2.2}/>
+  <CocktailTable position={[-6.1,0,4.25]}/><CocktailTable position={[6.1,0,4.25]}/>
+  <Plant position={[-8,0,-5.5]}/><Plant position={[8,0,-5.5]}/>
+  <mesh position={[0,.015,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[1.5,1.58,64]}/><meshBasicMaterial color="#c45cff"/></mesh>
+  <mesh position={[0,.018,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[3,3.06,64]}/><meshBasicMaterial color="#38dfff"/></mesh>
+ </group>
+}
+
 function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string }) {
  return <>
   <color attach="background" args={['#080711']}/>
@@ -94,7 +152,7 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
   <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.55} roughness={.38}/></mesh>
-  <gridHelper args={[18,18,'#563675','#29213c']} position={[0,.005,0]}/>
+  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,4.15,-6.48]}><boxGeometry args={[5.5,.12,.1]}/><meshStandardMaterial color="#d45cff" emissive="#a72cff" emissiveIntensity={2.5}/></mesh>
   <group position={[0,0,-4.7]}>
@@ -104,13 +162,12 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   </group>
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
-  <mesh position={[-5.2,.65,-1.8]}><boxGeometry args={[2.4,1.3,1.2]}/><meshStandardMaterial color="#2a223d"/></mesh>
-  <mesh position={[5.2,.65,-1.8]}><boxGeometry args={[2.4,1.3,1.2]}/><meshStandardMaterial color="#2a223d"/></mesh>
-  {roomType === 'bar' && <group position={[0,0,-2]}><mesh position={[0,.7,-1]}><boxGeometry args={[5,.9,1.1]}/><meshStandardMaterial color="#5a3145" metalness={.3}/></mesh>{[-1.7,-.6,.6,1.7].map(x=><mesh key={x} position={[x,.45,.1]}><cylinderGeometry args={[.22,.22,.9,12]}/><meshStandardMaterial color="#c7ff38" metalness={.55}/></mesh>)}</group>}
-  {roomType === 'lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.38,0]}><boxGeometry args={[2.7,.7,1.2]}/><meshStandardMaterial color="#34304e"/></mesh><mesh position={[0,.85,-.3]}><boxGeometry args={[2.7,.25,.45]}/><meshStandardMaterial color="#6a4a86"/></mesh></group>)}</group>}
-  {roomType === 'vip_lounge' && <group>{[-3,3].map(x=><group key={x} position={[x,0,-2]}><mesh position={[0,.45,0]}><boxGeometry args={[3,.85,1.4]}/><meshStandardMaterial color="#7b5630" metalness={.4}/></mesh><mesh position={[0,1,-.45]}><boxGeometry args={[3,.25,.35]}/><meshStandardMaterial color="#e7bd75" emissive="#8a632d" emissiveIntensity={.35}/></mesh></group>)}</group>}
+
+
+
+
   {(roomType === 'bar' || roomType === 'lounge' || roomType === 'vip_lounge') && <BarDrinks roomType={roomType}/>}
-  {roomType === 'dj_booth' && <group position={[0,0,-3.5]}><mesh position={[0,1.8,-1]}><boxGeometry args={[6,.12,.12]}/><meshStandardMaterial color="#c7ff38" emissive="#c7ff38" emissiveIntensity={3}/></mesh><mesh position={[0,2.3,-1]}><boxGeometry args={[2.8,.7,.15]}/><meshStandardMaterial color="#1b1727" emissive="#8c3cff" emissiveIntensity={.5}/></mesh></group>}
+
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me/>
   {[
