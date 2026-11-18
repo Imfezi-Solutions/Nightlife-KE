@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Clone, Sparkles, useGLTF } from '@react-three/drei'
+import { Clone, Sparkles, useAnimations, useGLTF } from '@react-three/drei'
 import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
@@ -20,15 +20,19 @@ const choices = {
 } as const
 const clamp = (n:number,min:number,max:number) => Math.max(min,Math.min(max,n))
 
-function HumanModel({person}:{person:Avatar['person']}) {
+function HumanModel({person,dance,seated}:{person:Avatar['person'];dance:Dance;seated:boolean}) {
+ const group=useRef<Group>(null)
  const models:Record<Avatar['person'],string>={
   sophia:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/sophia_formal.glb',
   daniel:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/daniel_formal.glb',
   priya:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/priya_casual.glb',
   carlos:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/carlos_casual.glb',
  }
- const {scene}=useGLTF(models[person])
- return <Clone object={scene}/>
+ const {scene,animations}=useGLTF(models[person])
+ const clip=seated?'Idle':dance==='hype'?'Cheer':dance==='bounce'?'Clap':dance==='groove'?'Clap':'Idle'
+ const {actions}=useAnimations(animations,group)
+ useEffect(()=>{const action=actions[clip]??actions.Idle;if(!action)return;action.reset().fadeIn(.25).play();return()=>{action.fadeOut(.2)}},[actions,clip])
+ return <group ref={group}><Clone object={scene}/></group>
 }
 
 function Dancer({ position, avatar, me=false, hidden=false }: { position:Position; avatar:Avatar; me?:boolean; hidden?:boolean }) {
@@ -45,7 +49,7 @@ function Dancer({ position, avatar, me=false, hidden=false }: { position:Positio
  const person=['sophia','daniel','priya','carlos'].includes(avatar.person)?avatar.person:'daniel'
  return <group ref={ref} position={[position.x,0,position.z]}>
   <Suspense fallback={<mesh position={[0,.9,0]}><capsuleGeometry args={[.28,.8,6,12]}/><meshStandardMaterial color="#9a8ba5"/></mesh>}>
-   <group rotation={[0,Math.PI,0]}><HumanModel person={person}/></group>
+   <group rotation={[0,Math.PI,0]}><HumanModel person={person} dance={position.dance} seated={!!position.seated}/></group>
   </Suspense>
   {me&&<mesh position={[0,2.05,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
  </group>
