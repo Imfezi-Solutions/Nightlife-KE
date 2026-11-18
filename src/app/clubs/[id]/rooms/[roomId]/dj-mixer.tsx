@@ -169,8 +169,22 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   const enableAudio = async () => {
     try {
       const audio = await ensureAudio()
-      audio.elementA.src = deckAUrl || ''
-      audio.elementB.src = deckBUrl || ''
+      let urlA = deckAUrl
+      let urlB = deckBUrl
+      if (mix.deckAPath && !urlA) {
+        const { data, error } = await createClient().storage.from('room-audio').createSignedUrl(mix.deckAPath, 3600)
+        if (error) throw error
+        urlA = data?.signedUrl || null
+        setDeckAUrl(urlA)
+      }
+      if (mix.deckBPath && !urlB) {
+        const { data, error } = await createClient().storage.from('room-audio').createSignedUrl(mix.deckBPath, 3600)
+        if (error) throw error
+        urlB = data?.signedUrl || null
+        setDeckBUrl(urlB)
+      }
+      audio.elementA.src = urlA || ''
+      audio.elementB.src = urlB || ''
       audio.elementA.load(); audio.elementB.load()
       if (mix.playing) {
         await Promise.all([audio.elementA.play().catch(()=>{}), audio.elementB.play().catch(()=>{})])
@@ -212,8 +226,6 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
         rights_status: 'approved', position: 0,
       })
       if (queueError) throw queueError
-      const { data, error: urlError } = await supabase.storage.from('room-audio').createSignedUrl(path, 3600)
-      if (urlError || !data?.signedUrl) throw urlError || new Error('Could not prepare the shared track URL.')
       const key = deck === 'A' ? 'deckA' : 'deckB'
       const next = { ...mix, playing: false, playbackStartedAt: null } as DJMix
       if (key === 'deckA') { next.deckAPath = path; next.deckAName = file.name }
