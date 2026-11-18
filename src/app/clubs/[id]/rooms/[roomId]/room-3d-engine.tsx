@@ -12,8 +12,6 @@ type Avatar = { person:'sophia'|'daniel'|'priya'|'carlos'; skin: 'warm'|'deep'|'
 type Position = { x:number; z:number; dance:Dance; seated?:boolean }
 type Remote = { id:string; position:Position; avatar:Avatar }
 const defaults: Avatar = { person:'daniel', skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
-const skin: Record<Avatar['skin'],string> = { warm:'#a96745', deep:'#613b2d', light:'#e0ad83', tan:'#c9875c' }
-const clothes: Record<Avatar['outfit'],string> = { neon:'#c7ff38', street:'#6478ff', vip:'#e7bd75', classic:'#d5d9e2' }
 const choices = {
  dance:[['groove','Groove'],['bounce','Bounce'],['sway','Sway'],['hype','Hype']],
  person:[['sophia','Sophia'],['daniel','Daniel'],['priya','Priya'],['carlos','Carlos']],
@@ -157,19 +155,16 @@ function LuxuryClubArchitecture() {
    <mesh position={[0,0,.07]}><boxGeometry args={[2.32,3.45,.035]}/><meshStandardMaterial color={dark} metalness={.2}/></mesh>
    <mesh position={[0,0,.1]}><boxGeometry args={[.035,3.25,.025]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
    <mesh position={[0,-1.58,.12]}><boxGeometry args={[2.1,.035,.025]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
-   <pointLight position={[0,1.3,.55]} color="#b45cff" intensity={1.3} distance={4}/>
   </group>)}
   {/* Side-wall inset panels */}
   {[-4.5,-1.5,1.5,4.5].flatMap(z=>[-8.48,8.48].map(x=><group key={'side-panel-'+x+'-'+z} position={[x,2.4,z]}>
    <mesh><boxGeometry args={[.08,3.5,2.5]}/><meshStandardMaterial color={wall}/></mesh>
    <mesh position={[x<0?.06:-.06,0,0]}><boxGeometry args={[.035,3.2,2.2]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
-   <pointLight position={[x<0?.35:-.35,.5,0]} color="#35dfff" intensity={.8} distance={3}/>
   </group>))}
   {/* Recessed ceiling light wells */}
   {[-6,-3,0,3,6].flatMap(x=>[-4,0,4].map(z=><group key={'well-'+x+'-'+z} position={[x,4.84,z]}>
    <mesh><boxGeometry args={[1.1,.035,1.1]}/><meshStandardMaterial color="#090812" metalness={.4}/></mesh>
    <mesh position={[0,-.035,0]}><boxGeometry args={[.72,.025,.72]}/><meshStandardMaterial color="#e3b979" emissive="#e3a94c" emissiveIntensity={1.5}/></mesh>
-   <pointLight position={[0,-.18,0]} color="#ffcf91" intensity={1.1} distance={4}/>
   </group>))}
   {/* Floor inlays and perimeter lighting */}
   {Array.from({length:11},(_,i)=>-5+i).map(x=><mesh key={'floor-x-'+x} position={[x,.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.018,13.7]}/><meshBasicMaterial color="#59436b" transparent opacity={.65}/></mesh>)}
@@ -225,8 +220,6 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.62} roughness={.24}/></mesh>
   {/* Glossy club floor: individual dark stone tiles with fine brass seams. */}
-  {Array.from({length:12},(_,ix)=>Array.from({length:9},(_,iz)=><mesh key={'floor-tile-'+ix+'-'+iz} position={[-8.25+ix*1.5,-.022,-5.6+iz*1.4]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[1.44,1.34]}/><meshStandardMaterial color={(ix+iz)%2===0?'#211c31':'#292238'} metalness={.58} roughness={.22}/></mesh>))}
-  {Array.from({length:12},(_,ix)=>Array.from({length:9},(_,iz)=><mesh key={'floor-glint-'+ix+'-'+iz} position={[-8.25+ix*1.5,-.019,-5.6+iz*1.4]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.025,1.32]}/><meshBasicMaterial color="#8d6b9f" transparent opacity={.3}/></mesh>))}
   <LuxuryClubArchitecture/>\n  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,4.15,-6.48]}><boxGeometry args={[5.5,.12,.1]}/><meshStandardMaterial color="#d45cff" emissive="#a72cff" emissiveIntensity={2.5}/></mesh>
@@ -234,14 +227,13 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
-  <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
 
 
 
 
   {(roomType === 'bar' || roomType === 'lounge' || roomType === 'vip_lounge') && <BarDrinks roomType={roomType}/>}
 
-  {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
+  {high && <Sparkles count={20} scale={[15,4,12]} size={1.5} speed={.18} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me hidden={view==='first'}/>
   <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,person:'sophia',dance:'sway'}}/>
   {[
@@ -260,7 +252,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,7),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
  const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
- const [quality,setQuality]=useState<'low'|'high'>('high')
+ const [quality,setQuality]=useState<'low'|'high'>('low')
  const [view,setView]=useState<'first'|'third'>('third')
  const [controls,setControls]=useState<Record<string,string>>(()=>{try{return JSON.parse(sessionStorage.getItem('nightlife-controls:'+userId)||'null')||{forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'}}catch{return {forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'}}})
  const [editingControls,setEditingControls]=useState(false)
@@ -353,7 +345,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
    <div className="flex items-center gap-3"><label className="text-xs text-zinc-400">Camera <select value={view} onChange={e=>setView(e.target.value as "first"|"third")} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="first">First person</option><option value="third">Third person</option></select></label><label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label></div>
   </header>
   <div className="relative h-[420px] touch-none sm:h-[540px]">
-   <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,3.15,7.8],fov:view==='first'?78:58}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
+   <Canvas shadows={false} dpr={quality==='high'?[1,1.25]:1} camera={{position:[0,3.15,7.8],fov:view==='first'?78:58}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
     <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType="club" view={view}/>
    </Canvas>
    <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">Keyboard or touch controls · {position.seated?'Seated':'Standing'} · camera follows your character</div>
