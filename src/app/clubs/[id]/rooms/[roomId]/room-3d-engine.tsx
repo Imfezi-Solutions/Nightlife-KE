@@ -246,7 +246,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,7),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
  const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
- const [quality,setQuality]=useState<'low'|'high'>('low')
+ const [quality,setQuality]=useState<'low'|'high'>('high')
  const [editing,setEditing]=useState(false)
  const [saving,setSaving]=useState(false)
  const [status,setStatus]=useState('Connecting…')
