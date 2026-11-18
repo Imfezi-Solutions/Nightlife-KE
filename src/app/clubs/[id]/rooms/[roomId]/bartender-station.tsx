@@ -81,11 +81,10 @@ export default function BartenderStation({roomId,userId,displayName}:{roomId:str
   const mineActive=mine.filter(o=>o.status!=='served')
   const grouped=MENU.reduce<Record<string,typeof MENU>>((acc,item)=>{(acc[item.category]??=[]).push(item);return acc},{})
   return <>
-    <div className="border-t border-white/10 px-5 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-[10px] font-black uppercase tracking-[.25em] text-amber-200">Interactive bar</p><p className="mt-1 text-xs text-zinc-400">Order a drink or step behind the counter and run the bar.</p></div>
-        <button onClick={()=>setOpen(true)} className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-xs font-black text-amber-100 hover:bg-amber-300/20">Open bar station · {activeOrders.length} active</button>
-      </div>
+    <div className="fixed bottom-5 left-4 z-[70] flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-2 rounded-2xl border border-amber-200/20 bg-[#100d17]/95 p-2 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:left-6">
+      <div className="hidden px-2 sm:block"><p className="text-[9px] font-black uppercase tracking-[.2em] text-amber-200">At the bar</p><p className="text-[10px] text-zinc-400">{activeOrders.length} active orders</p></div>
+      <button onClick={()=>{setMode('guest');setOpen(true)}} className="rounded-xl bg-amber-200 px-4 py-3 text-xs font-black text-black shadow-lg hover:bg-amber-100">Order a drink</button>
+      <button onClick={()=>{setMode('bartender');setOpen(true)}} className="rounded-xl border border-amber-200/35 bg-amber-200/10 px-4 py-3 text-xs font-black text-amber-100 hover:bg-amber-200/20">Be the bartender</button>
     </div>
     {open&&<div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/85 p-2 backdrop-blur-md sm:p-4">
       <div className="max-h-[96vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-amber-200/15 bg-[#0d0b12] p-4 shadow-2xl sm:p-6">
