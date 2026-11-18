@@ -33,14 +33,18 @@ function HumanModel({person,dance,seated}:{person:Avatar['person'];dance:Dance;s
  return <group ref={group}><Clone object={scene}/></group>
 }
 
-function Dancer({ position, avatar, me=false, hidden=false }: { position:Position; avatar:Avatar; me?:boolean; hidden?:boolean }) {
+function Dancer({ position, avatar, me=false, hidden=false, wander=false }: { position:Position; avatar:Avatar; me?:boolean; hidden?:boolean; wander?:boolean }) {
  const ref = useRef<Group>(null)
  useFrame(({clock}) => {
   if (!ref.current) return
   const t=clock.getElapsedTime()
   if(position.seated){ref.current.position.y=-.18;ref.current.rotation.x=-.06;return}
+  const driftX=wander?Math.sin(t*.32+position.x*1.7)*.42:0
+  const driftZ=wander?Math.cos(t*.27+position.z*1.3)*.3:0
+  ref.current.position.x=position.x+driftX
+  ref.current.position.z=position.z+driftZ
   ref.current.position.y=Math.abs(Math.sin(t*(avatar.dance==='hype'?7:avatar.dance==='bounce'?4:2.5)+position.x))*(avatar.dance==='hype'?.08:.025)
-  ref.current.rotation.y=Math.sin(t*1.1+position.x)*.08
+  ref.current.rotation.y=wander?Math.atan2(Math.cos(t*.32+position.x*1.7)*.42,Math.sin(t*.27+position.z*1.3)*.3):Math.sin(t*1.1+position.x)*.08
   ref.current.rotation.z=Math.sin(t*1.8+position.z)*(avatar.dance==='sway'?.08:.025)
  })
  if(hidden)return null
@@ -235,13 +239,14 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
 
   {high && <Sparkles count={20} scale={[15,4,12]} size={1.5} speed={.18} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me hidden={view==='first'}/>
-  <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,person:'sophia',dance:'sway'}}/>
+  <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,person:'sophia',dance:'sway'}} wander/>
+  <Dancer position={{x:-5.1,z:-2.85,dance:'sway'}} avatar={{...defaults,person:'daniel',dance:'sway'}} />
   {[
    {x:-5.9,z:-.2,dance:'sway' as Dance,person:'priya' as Avatar['person']},
    {x:5.8,z:.5,dance:'hype' as Dance,person:'carlos' as Avatar['person']},
    {x:-3.8,z:3.1,dance:'bounce' as Dance,person:'sophia' as Avatar['person']},
    {x:3.9,z:3.3,dance:'groove' as Dance,person:'daniel' as Avatar['person']},
-  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}}/>)}
+  ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}} wander/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   <FollowCamera position={position} mode={view}/>
  </>
@@ -260,6 +265,13 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [bartenderOpen,setBartenderOpen]=useState(false)
  const [selectedDrink,setSelectedDrink]=useState('Tropical mocktail')
  const [drinkChosen,setDrinkChosen]=useState(false)
+ const speakBartender=useCallback((message:string)=>{
+  if(typeof window==='undefined'||!('speechSynthesis' in window))return
+  window.speechSynthesis.cancel()
+  const utterance=new SpeechSynthesisUtterance(message)
+  utterance.lang='en-KE';utterance.rate=.94;utterance.pitch=1.02;utterance.volume=1
+  window.speechSynthesis.speak(utterance)
+ },[])
  const [pairOpen,setPairOpen]=useState(false)
  const [incomingPair,setIncomingPair]=useState<string|null>(null)
  const [pairedWith,setPairedWith]=useState<string|null>(null)
@@ -358,7 +370,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
    </div>
   </div>
   <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-3"><button onClick={()=>setBartenderOpen(v=>!v)} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-200">Talk to bartender</button><button onClick={()=>setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">{position.seated?'Stand up':'Sit / stand'}</button><button onClick={()=>setPairOpen(v=>!v)} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-200">Pair / couple</button><button onClick={()=>setEditingControls(v=>!v)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Customize controls</button></div>
-  {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>setDrinkChosen(true)} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
+  {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><button onClick={()=>speakBartender('Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?')} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-2 text-xs text-amber-100">Play bartender voice</button><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>{setDrinkChosen(true);speakBartender(`Coming right up. Enjoy your ${selectedDrink}!`)}} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
   {pairOpen&&<div className="mx-5 mb-4 rounded-2xl border border-fuchsia-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Pair up · mutual consent</p><p className="mt-2 text-sm text-zinc-300">Invite someone to dance or spend time together. Pairing is open to everyone — no gender selection or assumptions.</p>{pairedWith&&<p className="mt-2 text-xs text-emerald-300">Paired with guest {pairedWith.slice(0,6)} · <button className="underline" onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-ended',payload:{to:pairedWith,from:userId}});setPairedWith(null)}}>End pairing</button></p>}<div className="mt-3 flex flex-wrap gap-2">{remotes.map(guest=><button key={guest.id} onClick={()=>void channelRef.current?.send({type:'broadcast',event:'pair-invite',payload:{to:guest.id,from:userId}})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Invite guest {guest.id.slice(0,6)}</button>)}{remotes.length===0&&<span className="text-xs text-zinc-500">No other guests are connected right now.</span>}</div>{incomingPair&&<div className="mt-3 rounded-xl bg-black/30 p-3"><p className="text-sm text-white">Guest {incomingPair.slice(0,6)} invited you to pair.</p><div className="mt-2 flex gap-2"><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-accepted',payload:{to:incomingPair,from:userId}});setPairedWith(incomingPair);setIncomingPair(null)}} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">Accept</button><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-declined',payload:{to:incomingPair,from:userId}});setIncomingPair(null)}} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Decline</button></div></div>}</div>}
   {editingControls&&<div className="mx-5 mb-4 rounded-2xl border border-white/10 bg-[#11101d] p-4"><p className="text-xs font-black uppercase tracking-widest text-lime-200">Choose your keys</p><p className="mt-1 text-xs text-zinc-400">Select an action, then press the key you want to assign. Arrow keys also remain available for movement.</p><div className="mt-3 flex flex-wrap gap-2">{Object.entries({forward:'Move forward',backward:'Move backward',left:'Move left',right:'Move right',sit:'Sit / stand',interact:'Talk to bartender'}).map(([action,label])=><button key={action} onClick={()=>setListeningFor(action)} className={`rounded-lg border px-3 py-2 text-xs ${listeningFor===action?'border-lime-300 bg-lime-300/10 text-lime-100':'border-white/10 text-zinc-200'}`}>{listeningFor===action?'Press a key…':`${label}: ${controls[action]}`}</button>)}</div><button onClick={()=>{setControls({forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'});setListeningFor(null)}} className="mt-3 text-xs text-zinc-400 underline">Reset controls</button></div>}
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
