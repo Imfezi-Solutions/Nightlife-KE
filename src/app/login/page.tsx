@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [confirmationSent, setConfirmationSent] = useState(false)
@@ -22,6 +23,11 @@ export default function LoginPage() {
     const supabase = createClient()
 
     if (mode === 'signup') {
+      if (!acceptedTerms) {
+        setError('You must accept the Terms and Conditions to create an account.')
+        setLoading(false)
+        return
+      }
       if (password.length < 8) {
         setError('Use a password with at least 8 characters.')
         setLoading(false)
@@ -35,7 +41,10 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+          data: { terms_accepted: true, terms_version: '2026-11-18-v1', terms_accepted_at: new Date().toISOString() },
+        },
       })
       if (error) {
         setError(error.message)
@@ -74,12 +83,13 @@ export default function LoginPage() {
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block text-sm text-zinc-300">Email address<input type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-lime-300" placeholder="you@example.com" /></label>
         <label className="block text-sm text-zinc-300">Password<input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={mode === 'signup' ? 8 : undefined} required value={password} onChange={event => setPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-lime-300" placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'} /></label>
+        {mode === 'signup' && <label className="flex items-start gap-3 text-sm leading-6 text-zinc-300"><input type="checkbox" required checked={acceptedTerms} onChange={event => setAcceptedTerms(event.target.checked)} className="mt-1 h-4 w-4 accent-lime-300" /><span>I have read and agree to the <Link href="/terms" target="_blank" className="font-semibold text-lime-300 underline">Terms and Conditions</Link> and <Link href="/privacy" target="_blank" className="font-semibold text-lime-300 underline">Privacy Policy</Link>.</span></label>}
         {mode === 'signup' && <label className="block text-sm text-zinc-300">Confirm password<input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-lime-300" placeholder="Enter your password again" /></label>}
         <button type="submit" disabled={loading} className="w-full rounded-xl bg-lime-300 px-5 py-4 font-bold text-black disabled:opacity-60">{loading ? (mode === 'signin' ? 'Signing in…' : 'Creating account…') : (mode === 'signin' ? 'Sign in' : 'Create account')}</button>
       </form>
       {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
       <p className="mt-6 text-center text-sm text-zinc-400">{mode === 'signin' ? 'New to Nightlife KE?' : 'Already have an account?'} <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError('') }} className="font-semibold text-lime-300 hover:underline">{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p>
-      <p className="mt-8 text-xs leading-6 text-zinc-500">Nightlife KE is for adults aged 18 and over. Account registration does not itself verify your age; access to clubs remains restricted until independent age verification is completed.</p>
+      <p className="mt-8 text-xs leading-6 text-zinc-500">Nightlife KE is an adults-only social platform. Independent identity verification is temporarily paused; users must still follow the Terms and Conditions and applicable laws.</p>
     </>}
   </div></main>
 }
