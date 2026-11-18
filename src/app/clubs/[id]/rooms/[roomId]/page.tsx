@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import RoomChat from './room-chat'
 import DjConsole from './dj-console'
+import RoomVoiceChat from './room-voice-chat'
 import Room3DEngineLoader from './room-3d-engine-loader'
 import { sendRoomMessageAction } from '../../../actions'
 import { createClient } from '@/lib/supabase/server'
@@ -34,6 +35,7 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
   {query.error==='slow_down'&&<p className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-sm text-amber-200">You’re sending messages too quickly. Wait a few seconds and try again.</p>}
   {query.error==='message'&&<p className="mt-5 rounded-xl border border-red-300/20 bg-red-300/5 p-3 text-sm text-red-200">Your message could not be sent. Please try again.</p>}
   <Room3DEngineLoader roomId={roomId} userId={userId} displayName={profile?.display_name??'You'} initialConfig={profile?.avatar_config??null} roomType={room.room_type}/>
+  <RoomVoiceChat roomId={roomId} userId={userId}/>
   <RoomChat clubId={id} roomId={roomId} currentUserId={userId} capacity={room.capacity} initialMessages={messages??[]}/>
   <DjConsole roomId={roomId} currentUserId={userId} canControl={['owner','moderator','dj'].includes(membership.role)||Boolean(platformDj)} initialQueue={musicQueue??[]} initialSession={musicSession??null}/>
   <form action={sendRoomMessageAction} className="glass mt-4 rounded-2xl p-3 sm:p-4">
