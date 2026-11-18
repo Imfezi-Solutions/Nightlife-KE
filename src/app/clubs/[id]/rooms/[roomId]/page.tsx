@@ -15,13 +15,11 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
  const {data:claims}=await supabase.auth.getClaims()
  const userId=claims?.claims?.sub
  if(!userId)redirect('/login')
- const [{data:room},{data:membership},{data:ageVerification}]=await Promise.all([
+ const [{data:room},{data:membership}]=await Promise.all([
   supabase.from('rooms').select('id,club_id,name,room_type,capacity').eq('id',roomId).eq('club_id',id).eq('is_active',true).maybeSingle(),
   supabase.from('club_members').select('role').eq('club_id',id).eq('user_id',userId).maybeSingle(),
-  supabase.from('age_verifications').select('status,verified_at,expires_at').eq('user_id',userId).eq('status','verified').not('verified_at','is',null).gt('expires_at',new Date().toISOString()).limit(1).maybeSingle(),
  ])
  if(!room||!membership)notFound()
- if(!ageVerification)redirect('/discover?error=age_verification_required')
  const [{data:club},{data:messages},{data:musicQueue},{data:musicSession},{data:platformDj},{data:profile}]=await Promise.all([
   supabase.from('clubs').select('name').eq('id',id).maybeSingle(),
   supabase.from('chat_messages').select('id,club_id,room_id,author_id,body,created_at').eq('club_id',id).eq('room_id',roomId).order('created_at',{ascending:true}).limit(100),
