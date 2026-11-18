@@ -132,6 +132,79 @@ function RoomFurnishings({roomType:_roomType}:{roomType:string}) {
   <mesh position={[0,.018,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[3,3.06,64]}/><meshBasicMaterial color="#38dfff"/></mesh>
  </group>
 }
+
+function LuxuryClubArchitecture() {
+ const gold = '#c79b62'
+ const dark = '#211a2b'
+ const wall = '#30243b'
+ return <group>
+  {/* Architectural ceiling, layered cornices and acoustic beams */}
+  <mesh position={[0,5.05,0]}><boxGeometry args={[18,.28,14]}/><meshStandardMaterial color="#100e1a" metalness={.35} roughness={.55}/></mesh>
+  {[-6,-3,0,3,6].map(x=><group key={'ceiling-'+x} position={[x,4.82,0]}>
+   <mesh><boxGeometry args={[.13,.2,13.6]}/><meshStandardMaterial color={gold} metalness={.8} roughness={.25}/></mesh>
+   <mesh position={[0,-.13,0]}><boxGeometry args={[.32,.08,13.6]}/><meshStandardMaterial color="#6d3c91" emissive="#6d3c91" emissiveIntensity={.65}/></mesh>
+  </group>)}
+  {[-5.8,0,5.8].map(z=><mesh key={'crossbeam-'+z} position={[0,4.72,z]}><boxGeometry args={[17.7,.16,.16]}/><meshStandardMaterial color={gold} metalness={.75}/></mesh>)}
+  {/* Tall fluted columns and brass bases */}
+  {[-8.15,8.15].flatMap(x=>[-5.5,0,5.5].map(z=><group key={'column-'+x+'-'+z} position={[x,0,z]}>
+   <mesh position={[0,2.25,0]}><cylinderGeometry args={[.3,.38,4.5,20]}/><meshStandardMaterial color={wall} metalness:.25} roughness={.48}/></mesh>
+   {[-.18,-.06,.06,.18].map(dx=><mesh key={dx} position={[dx,2.25,.28]}><boxGeometry args={[.035,4.15,.035]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>)}
+   <mesh position={[0,.16,0]}><cylinderGeometry args={[.48,.48,.24,24]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
+   <mesh position={[0,4.48,0]}><cylinderGeometry args={[.48,.38,.2,24]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
+  </group>))}
+  {/* Wall treatment: inset panels, brass reveals and sconces */}
+  {[-6,-3,0,3,6].map(x=><group key={'back-panel-'+x} position={[x,2.45,-6.48]}>
+   <mesh><boxGeometry args={[2.55,3.7,.09]}/><meshStandardMaterial color={wall} metalness={.22} roughness={.6}/></mesh>
+   <mesh position={[0,0,.07]}><boxGeometry args={[2.32,3.45,.035]}/><meshStandardMaterial color={dark} metalness={.2}/></mesh>
+   <mesh position={[0,0,.1]}><boxGeometry args={[.035,3.25,.025]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
+   <mesh position={[0,-1.58,.12]}><boxGeometry args={[2.1,.035,.025]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
+   <pointLight position={[0,1.3,.55]} color="#b45cff" intensity={1.3} distance={4}/>
+  </group>)}
+  {/* Side-wall inset panels */}
+  {[-4.5,-1.5,1.5,4.5].flatMap(z=>[-8.48,8.48].map(x=><group key={'side-panel-'+x+'-'+z} position={[x,2.4,z]}>
+   <mesh><boxGeometry args={[.08,3.5,2.5]}/><meshStandardMaterial color={wall}/></mesh>
+   <mesh position={[x<0?.06:-.06,0,0]}><boxGeometry args={[.035,3.2,2.2]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>
+   <pointLight position={[x<0?.35:-.35,.5,0]} color="#35dfff" intensity={.8} distance={3}/>
+  </group>))}
+  {/* Recessed ceiling light wells */}
+  {[-6,-3,0,3,6].flatMap(x=>[-4,0,4].map(z=><group key={'well-'+x+'-'+z} position={[x,4.84,z]}>
+   <mesh><boxGeometry args={[1.1,.035,1.1]}/><meshStandardMaterial color="#090812" metalness={.4}/></mesh>
+   <mesh position={[0,-.035,0]}><boxGeometry args={[.72,.025,.72]}/><meshStandardMaterial color="#e3b979" emissive="#e3a94c" emissiveIntensity={1.5}/></mesh>
+   <pointLight position={[0,-.18,0]} color="#ffcf91" intensity={1.1} distance={4}/>
+  </group>))}
+  {/* Floor inlays and perimeter lighting */}
+  {Array.from({length:11},(_,i)=>-5+i).map(x=><mesh key={'floor-x-'+x} position={[x,.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.018,13.7]}/><meshBasicMaterial color="#59436b" transparent opacity={.65}/></mesh>)}
+  {Array.from({length:9},(_,i)=>-4+i).map(z=><mesh key={'floor-z-'+z} position={[0,.007,z]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[17.7,.018]}/><meshBasicMaterial color="#59436b" transparent opacity={.65}/></mesh>)}
+  {[-8.25,8.25].map(x=><mesh key={'edge-'+x} position={[x,.025,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.055,13.5]}/><meshBasicMaterial color="#42dfff"/></mesh>)}
+  {/* Suspended crystal-style chandeliers */}
+  {[-4.8,4.8].map(x=><group key={'chandelier-'+x} position={[x,4.35,-1]}>
+   <mesh position={[0,-.25,0]}><cylinderGeometry args={[.08,.08,.5,12]}/><meshStandardMaterial color={gold} metalness={.9}/></mesh>
+   <mesh position={[0,-.58,0]}><torusGeometry args={[.72,.045,8,32]}/><meshStandardMaterial color={gold} metalness={.85}/></mesh>
+   {Array.from({length:8},(_,i)=><mesh key={i} position={[Math.cos(i*Math.PI/4)*.58,-.78,Math.sin(i*Math.PI/4)*.58]}><octahedronGeometry args={[.13]}/><meshPhysicalMaterial color="#d9c9ff" roughness={.08} metalness={.15} transmission={.35}/></mesh>)}
+   <pointLight position={[0,-.65,0]} color="#e4c8ff" intensity={3} distance={7}/>
+  </group>)}
+ </group>
+}
+
+function PremiumDJBooth() {
+ return <group position={[0,0,-4.7]}>
+  <mesh position={[0,.48,0]} castShadow><boxGeometry args={[4.8,.96,1.65]}/><meshStandardMaterial color="#17131f" metalness={.72} roughness={.25}/></mesh>
+  <mesh position={[0,.99,0]}><boxGeometry args={[4.85,.09,1.7]}/><meshStandardMaterial color="#8d48bb" emissive="#8d48bb" emissiveIntensity={1.5} metalness={.55}/></mesh>
+  {[-1.35,1.35].map(x=><group key={x} position={[x,1.12,.05]}>
+   <cylinderGeometry args={[.32,.32,.08,32]}/>
+   <mesh><cylinderGeometry args={[.32,.32,.08,32]}/><meshStandardMaterial color="#090910" metalness={.8}/></mesh>
+   <mesh position={[0,.055,0]}><torusGeometry args={[.23,.018,8,32]}/><meshBasicMaterial color="#38dfff"/></mesh>
+   <mesh position={[0,.06,0]}><cylinderGeometry args={[.055,.055,.025,16]}/><meshStandardMaterial color="#b8a2cf" metalness={.8}/></mesh>
+  </group>)}
+  <mesh position={[0,1.18,-.43]}><boxGeometry args={[.9,.28,.06]}/><meshStandardMaterial color="#080811" emissive="#a94cff" emissiveIntensity={1.4}/></mesh>
+  {[-2.1,2.1].map(x=><group key={'dj-speaker-'+x} position={[x,.9,-.1]}>
+   <mesh><boxGeometry args={[.42,1.15,.48]}/><meshStandardMaterial color="#090910" metalness={.5}/></mesh>
+   <mesh position={[0,.18,.25]}><cylinderGeometry args={[.14,.14,.035,24]}/><meshStandardMaterial color="#282333"/></mesh>
+   <mesh position={[0,.18,.28]}><torusGeometry args={[.1,.018,8,24]}/><meshBasicMaterial color="#c45cff"/></mesh>
+  </group>)}
+ </group>
+}
+
 function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string }) {
  return <>
   <color attach="background" args={['#080711']}/>
@@ -143,14 +216,10 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
   <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.55} roughness={.38}/></mesh>
-  <RoomFurnishings roomType={roomType}/>
+  <LuxuryClubArchitecture/>\n  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,4.15,-6.48]}><boxGeometry args={[5.5,.12,.1]}/><meshStandardMaterial color="#d45cff" emissive="#a72cff" emissiveIntensity={2.5}/></mesh>
-  <group position={[0,0,-4.7]}>
-   <mesh position={[0,.55,0]} castShadow><boxGeometry args={[4.4,1.1,1.5]}/><meshStandardMaterial color="#30213e" metalness={.45}/></mesh>
-   <mesh position={[0,1.13,0]}><boxGeometry args={[4.5,.08,1.55]}/><meshStandardMaterial color="#a74bff" emissive="#a74bff" emissiveIntensity={2}/></mesh>
-   {[-1.1,0,1.1].map(x=><mesh key={x} position={[x,1.3,0]}><cylinderGeometry args={[.25,.25,.08,20]}/><meshStandardMaterial color="#c7ff38" emissive="#7dbd22" emissiveIntensity={1.5}/></mesh>)}
-  </group>
+  <PremiumDJBooth/>
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
 
