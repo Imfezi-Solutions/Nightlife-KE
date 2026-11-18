@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import DJMixer, { DEFAULT_DJ_MIX, type DJMix } from './dj-mixer'
+import BartenderStation from './bartender-station'
 
 type Dance = 'groove' | 'bounce' | 'sway' | 'hype'
 type Avatar = { person:'sophia'|'daniel'|'priya'|'carlos'; skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
@@ -385,6 +386,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
    <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'VIP',x:0,z:4.5},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   <DJMixer roomId={roomId} userId={userId} mix={djMix} isDJ={djOwner===userId} djName={djName} onClaim={()=>{setDjOwner(userId);setDjName(displayName||'Guest DJ');void channelRef.current?.send({type:'broadcast',event:'dj-claim',payload:{userId,name:displayName||'Guest DJ'}})}} onMixChange={next=>{setDjMix(next);void channelRef.current?.send({type:'broadcast',event:'dj-mix',payload:{mix:next,djOwner:userId,djName:displayName||'Guest DJ'}})}}/>
+  <BartenderStation roomId={roomId} userId={userId} displayName={displayName||'Guest'}/>
   {editing&&<div className="grid gap-4 p-5 sm:grid-cols-2">{(Object.keys(choices) as (keyof typeof choices)[]).map(key=><label key={key} className="text-xs font-bold capitalize text-zinc-400">{key}<select value={avatar[key]} onChange={e=>setAvatar(a=>({...a,[key]:e.target.value} as Avatar))} className="mt-2 w-full rounded-xl border border-white/10 bg-[#12141e] px-4 py-3 text-sm text-white">{choices[key].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>)}<div className="sm:col-span-2"><button onClick={()=>void save()} disabled={saving} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-black disabled:opacity-50">{saving?'Saving…':'Save character'}</button></div></div>}
  </section>
 }
