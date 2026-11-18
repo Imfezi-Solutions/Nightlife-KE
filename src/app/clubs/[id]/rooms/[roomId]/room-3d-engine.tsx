@@ -275,7 +275,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [pairOpen,setPairOpen]=useState(false)
  const [incomingPair,setIncomingPair]=useState<string|null>(null)
  const [pairedWith,setPairedWith]=useState<string|null>(null)
- const touchInterval=useRef<ReturnType<typeof setInterval>|null>(null)
+ const touchInterval=useRef<number|null>(null)
  const [editing,setEditing]=useState(false)
  const [saving,setSaving]=useState(false)
  const [status,setStatus]=useState('Connecting…')
