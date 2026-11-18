@@ -561,6 +561,41 @@ export type Database = {
           },
         ]
       }
+      club_item_inventory: {
+        Row: {
+          acquired_at: string
+          club_id: string
+          item_key: string
+          item_name: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          club_id: string
+          item_key: string
+          item_name: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          club_id?: string
+          item_key?: string
+          item_name?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_item_inventory_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string
