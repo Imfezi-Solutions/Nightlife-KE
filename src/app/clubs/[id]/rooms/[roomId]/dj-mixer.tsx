@@ -49,6 +49,7 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [uploading, setUploading] = useState<'A' | 'B' | null>(null)
   const [error, setError] = useState('')
+  const [rightsConfirmed, setRightsConfirmed] = useState(false)
 
   const ensureAudio = useCallback(async () => {
     if (!rig.current) {
@@ -143,23 +144,49 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   }
   const uploadTrack = async (deck: 'A' | 'B', file?: File) => {
     if (!file) return
+    if (!rightsConfirmed) { setError('Confirm that you own this music or have permission to stream it.'); return }
     if (!file.type.startsWith('audio/') || !/\.(mp3|wav|ogg|m4a|aac)$/i.test(file.name)) {
       setError('Choose an MP3, WAV, OGG, M4A or AAC audio file.'); return
     }
     if (file.size > 25 * 1024 * 1024) { setError('Each track must be 25 MB or smaller.'); return }
     setUploading(deck); setError('')
+    let uploadedPath: string | null = null
     try {
+      const localUrl = URL.createObjectURL(file)
+      const durationMs = await new Promise<number>((resolve, reject) => {
+        const probe = new Audio()
+        probe.preload = 'metadata'
+        probe.onloadedmetadata = () => { const duration = probe.duration; URL.revokeObjectURL(localUrl); if (!Number.isFinite(duration) || duration <= 0) reject(new Error('Could not read the track duration.')); else resolve(Math.round(duration * 1000)) }
+        probe.onerror = () => { URL.revokeObjectURL(localUrl); reject(new Error('This audio file could not be decoded by the browser.')) }
+        probe.src = localUrl
+      })
       const supabase = createClient()
       const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').slice(-90)
-      const path = `${roomId}/${userId}/${crypto.randomUUID()}-${safeName}`
+      const path = roomId + '/' + userId + '/' + crypto.randomUUID() + '-' + safeName
       const { error: uploadError } = await supabase.storage.from('room-audio').upload(path, file, { contentType: file.type, upsert: false })
       if (uploadError) throw uploadError
+      uploadedPath = path
+      const { error: queueError } = await supabase.from('dj_queue').insert({
+        room_id: roomId, added_by: userId, source_type: 'original_upload', provider_asset_id: path,
+        title: file.name, artist: null, duration_ms: durationMs,
+        rights_reference: 'DJ attestation: uploader confirms ownership or permission to stream this audio in Nightlife KE.',
+        rights_status: 'approved', position: 0,
+      })
+      if (queueError) throw queueError
       const { data, error: urlError } = await supabase.storage.from('room-audio').createSignedUrl(path, 3600)
       if (urlError || !data?.signedUrl) throw urlError || new Error('Could not prepare the shared track URL.')
       const key = deck === 'A' ? 'deckA' : 'deckB'
-      onMixChange({ ...mix, [`${key}Url`]: data.signedUrl, [`${key}Name`]: file.name, playing: false, playbackStartedAt: null })
+      const next = { ...mix, playing: false, playbackStartedAt: null } as DJMix
+      if (key === 'deckA') { next.deckAUrl = data.signedUrl; next.deckAName = file.name }
+      else { next.deckBUrl = data.signedUrl; next.deckBName = file.name }
+      onMixChange(next)
+      setRightsConfirmed(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Track upload failed. Check that you are signed in and are the room DJ.')
+      if (uploadedPath) {
+        const supabase = createClient()
+        await supabase.storage.from('room-audio').remove([uploadedPath]).catch(()=>{})
+      }
+      setError(e instanceof Error ? e.message : 'Track upload failed. Your account must be an age-verified DJ or room owner/moderator.')
     } finally { setUploading(null) }
   }
 
@@ -174,7 +201,8 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
     </div>
     {open && isDJ && <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-fuchsia-300/30 bg-[#100e1b] p-5 shadow-2xl">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Nightlife DJ studio</p><p className="mt-1 text-xs text-zinc-500">Two real audio decks · shared room playback · EQ and crossfader</p></div><div className="flex gap-2"><button onClick={()=>setOpen(false)} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-zinc-300">Close window</button><button onClick={()=>void togglePlayback()} className={`rounded-xl px-5 py-3 text-sm font-black ${mix.playing?'bg-rose-400 text-black':'bg-lime-300 text-black'}`}>{mix.playing?'Stop mix':'Play room mix'}</button></div></div>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <label className="mt-4 flex items-start gap-2 text-xs text-zinc-300"><input type="checkbox" checked={rightsConfirmed} onChange={e=>setRightsConfirmed(e.target.checked)} className="mt-0.5 accent-fuchsia-300"/><span>I own these tracks or have permission to upload and stream them in this club.</span></label>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
         {(['A','B'] as const).map(deck => { const name = deck === 'A' ? mix.deckAName : mix.deckBName; const busy = uploading === deck; return <div key={deck} className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Deck {deck}</p><p className="mt-2 min-h-10 break-all text-sm text-white">{name || 'No track loaded'}</p><label className="mt-3 inline-flex cursor-pointer rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">{busy?'Uploading…':'Load audio track'}<input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4,audio/aac,.mp3,.wav,.ogg,.m4a,.aac" disabled={!!uploading} className="hidden" onChange={e=>{void uploadTrack(deck,e.target.files?.[0]);e.currentTarget.value=''}}/></label><p className="mt-2 text-[10px] text-zinc-500">Up to 25 MB · uploaded to this room for guests</p></div>})}
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
