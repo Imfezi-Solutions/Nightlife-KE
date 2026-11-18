@@ -1,17 +1,17 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Sparkles } from '@react-three/drei'
+import { Clone, Sparkles, useGLTF } from '@react-three/drei'
 import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type Dance = 'groove' | 'bounce' | 'sway' | 'hype'
-type Avatar = { skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
+type Avatar = { person:'sophia'|'daniel'|'priya'|'carlos'; skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
 type Position = { x:number; z:number; dance:Dance; seated?:boolean }
 type Remote = { id:string; position:Position; avatar:Avatar }
-const defaults: Avatar = { skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
+const defaults: Avatar = { person:'daniel', skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
 const skin: Record<Avatar['skin'],string> = { warm:'#a96745', deep:'#613b2d', light:'#e0ad83', tan:'#c9875c' }
 const clothes: Record<Avatar['outfit'],string> = { neon:'#c7ff38', street:'#6478ff', vip:'#e7bd75', classic:'#d5d9e2' }
 const choices = {
@@ -19,43 +19,38 @@ const choices = {
  hair:[['curly','Curly'],['fade','Fade'],['braids','Braids'],['short','Short']],
  outfit:[['neon','Neon'],['street','Streetwear'],['vip','VIP'],['classic','Classic']],
  dance:[['groove','Groove'],['bounce','Bounce'],['sway','Sway'],['hype','Hype']],
+ person:[['sophia','Sophia'],['daniel','Daniel'],['priya','Priya'],['carlos','Carlos']],
 } as const
 const clamp = (n:number,min:number,max:number) => Math.max(min,Math.min(max,n))
 
+function HumanModel({person}:{person:Avatar['person']}) {
+ const models:Record<Avatar['person'],string>={
+  sophia:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/sophia_formal.glb',
+  daniel:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/daniel_formal.glb',
+  priya:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/priya_casual.glb',
+  carlos:'https://raw.githubusercontent.com/memoriesrohit/avatar-studio/main/models/carlos_casual.glb',
+ }
+ const {scene}=useGLTF(models[person])
+ return <Clone object={scene}/>
+}
+
 function Dancer({ position, avatar, me=false, hidden=false }: { position:Position; avatar:Avatar; me?:boolean; hidden?:boolean }) {
  const ref = useRef<Group>(null)
- const leftArm = useRef<Group>(null)
- const rightArm = useRef<Group>(null)
- const leftLeg = useRef<Group>(null)
- const rightLeg = useRef<Group>(null)
  useFrame(({clock}) => {
   if (!ref.current) return
-  const t = clock.getElapsedTime()
-  const speed = avatar.dance === 'hype' ? 8 : avatar.dance === 'bounce' ? 5 : avatar.dance === 'sway' ? 2.2 : 3
-  const phase = t * speed + position.x * .7
-  if(position.seated){ref.current.position.y=-.38;ref.current.rotation.x=-.12;if(leftArm.current)leftArm.current.rotation.z=-.08;if(rightArm.current)rightArm.current.rotation.z=.08;return}
-  ref.current.position.y = Math.abs(Math.sin(phase)) * (avatar.dance === 'hype' ? .3 : avatar.dance === 'bounce' ? .2 : .1)
-  ref.current.rotation.z = Math.sin(t*2.2 + position.z) * (avatar.dance === 'sway' ? .22 : .09)
-  ref.current.rotation.y = Math.sin(t*1.4 + position.x) * .12
-  if (leftArm.current) leftArm.current.rotation.z = -.25 + Math.sin(phase + Math.PI) * (avatar.dance === 'hype' ? .95 : .55)
-  if (rightArm.current) rightArm.current.rotation.z = .25 + Math.sin(phase) * (avatar.dance === 'hype' ? .95 : .55)
-  if (leftLeg.current) leftLeg.current.rotation.x = Math.sin(phase) * .24
-  if (rightLeg.current) rightLeg.current.rotation.x = Math.sin(phase + Math.PI) * .24
+  const t=clock.getElapsedTime()
+  if(position.seated){ref.current.position.y=-.18;ref.current.rotation.x=-.06;return}
+  ref.current.position.y=Math.abs(Math.sin(t*(avatar.dance==='hype'?7:avatar.dance==='bounce'?4:2.5)+position.x))*(avatar.dance==='hype'?.08:.025)
+  ref.current.rotation.y=Math.sin(t*1.1+position.x)*.08
+  ref.current.rotation.z=Math.sin(t*1.8+position.z)*(avatar.dance==='sway'?.08:.025)
  })
  if(hidden)return null
- if(hidden)return null
+ const person=['sophia','daniel','priya','carlos'].includes(avatar.person)?avatar.person:'daniel'
  return <group ref={ref} position={[position.x,0,position.z]}>
-  <mesh position={[0,1.55,0]} castShadow><sphereGeometry args={[.25,24,20]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
-  {avatar.hair === 'curly' && <group>{[-.16,-.05,.06,.17].map((x,i)=><mesh key={i} position={[x,1.78+(i%2)*.04,-.03]}><boxGeometry args={[.22,.16,.22]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
-  {avatar.hair === 'fade' && <mesh position={[0,1.78,-.02]}><boxGeometry args={[.5,.12,.48]}/><meshStandardMaterial color="#20151f"/></mesh>}
-  {avatar.hair === 'short' && <mesh position={[0,1.75,-.02]}><boxGeometry args={[.5,.09,.48]}/><meshStandardMaterial color="#20151f"/></mesh>}
-  {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><boxGeometry args={[.07,.38,.08]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
-  <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.29,.25,6,16]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
-  <group ref={leftArm} position={[-.37,1.03,0]} rotation={[0,0,-.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.35,5,12]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
-  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.35,5,12]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
-  <group ref={leftLeg} position={[-.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.105,.36,5,12]}/><meshStandardMaterial color="#242330"/></mesh></group>
-  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.105,.36,5,12]}/><meshStandardMaterial color="#242330"/></mesh></group>
-  {me && <mesh position={[0,2.08,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
+  <Suspense fallback={<mesh position={[0,.9,0]}><capsuleGeometry args={[.28,.8,6,12]}/><meshStandardMaterial color="#9a8ba5"/></mesh>}>
+   <group rotation={[0,Math.PI,0]}><HumanModel person={person}/></group>
+  </Suspense>
+  {me&&<mesh position={[0,2.05,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
  </group>
 }
 
@@ -309,9 +304,10 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
     const meta=metas[metas.length-1]
     const dance=['groove','bounce','sway','hype'].includes(String(meta.dance))?meta.dance as Dance:'groove'
     const skinTone=['warm','deep','light','tan'].includes(String(meta.skin))?meta.skin as Avatar['skin']:'warm'
+    const person=['sophia','daniel','priya','carlos'].includes(String(meta.person))?meta.person as Avatar['person']:'daniel'
     const hair=['curly','fade','braids','short'].includes(String(meta.hair))?meta.hair as Avatar['hair']:'curly'
     const outfit=['neon','street','vip','classic'].includes(String(meta.outfit))?meta.outfit as Avatar['outfit']:'neon'
-    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{skin:skinTone,hair,outfit,dance}})
+    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{person,skin:skinTone,hair,outfit,dance}})
    }
    setRemotes(list)
   }
@@ -321,7 +317,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
   channel.on('broadcast',{event:'pair-declined'},({payload})=>{if(payload?.to===userId)setStatus('Pair invitation declined')})
   channel.on('broadcast',{event:'pair-ended'},({payload})=>{if(payload?.to===userId)setPairedWith(null)})
   channel.subscribe(state=>{
-   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit})}
+   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit,person:avatar.person})}
    else if(state==='CHANNEL_ERROR'||state==='TIMED_OUT')setStatus('Reconnecting…')
    else if(state==='CLOSED')setStatus('Disconnected')
   })
