@@ -42,6 +42,7 @@ function Dancer({ position, avatar, me=false, hidden=false }: { position:Positio
   if (rightLeg.current) rightLeg.current.rotation.x = Math.sin(phase + Math.PI) * .24
  })
  if(hidden)return null
+ if(hidden)return null
  return <group ref={ref} position={[position.x,0,position.z]}>
   <mesh position={[0,1.55,0]} castShadow><sphereGeometry args={[.25,24,20]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh>
   {avatar.hair === 'curly' && <group>{[-.16,-.05,.06,.17].map((x,i)=><mesh key={i} position={[x,1.78+(i%2)*.04,-.03]}><boxGeometry args={[.22,.16,.22]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
@@ -50,9 +51,9 @@ function Dancer({ position, avatar, me=false, hidden=false }: { position:Positio
   {avatar.hair === 'braids' && <group>{[-.18,-.06,.06,.18].map((x,i)=><mesh key={i} position={[x,1.72,-.02]} rotation={[0,0,x*.4]}><boxGeometry args={[.07,.38,.08]}/><meshStandardMaterial color="#20151f"/></mesh>)}</group>}
   <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.29,.25,6,16]}/><meshStandardMaterial color={clothes[avatar.outfit]} metalness={.12} roughness={.6}/></mesh>
   <group ref={leftArm} position={[-.37,1.03,0]} rotation={[0,0,-.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.35,5,12]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
-  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><boxGeometry args={[.18,.55,.2]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
+  <group ref={rightArm} position={[.37,1.03,0]} rotation={[0,0,.35]}><mesh position={[0,-.22,0]}><capsuleGeometry args={[.085,.35,5,12]}/><meshStandardMaterial color={skin[avatar.skin]}/></mesh></group>
   <group ref={leftLeg} position={[-.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.105,.36,5,12]}/><meshStandardMaterial color="#242330"/></mesh></group>
-  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><boxGeometry args={[.22,.58,.25]}/><meshStandardMaterial color="#242330"/></mesh></group>
+  <group ref={rightLeg} position={[.15,.65,0]}><mesh position={[0,-.25,0]}><capsuleGeometry args={[.105,.36,5,12]}/><meshStandardMaterial color="#242330"/></mesh></group>
   {me && <mesh position={[0,2.08,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
  </group>
 }
@@ -232,6 +233,7 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <PremiumDJBooth/>
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
+  <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
 
 
