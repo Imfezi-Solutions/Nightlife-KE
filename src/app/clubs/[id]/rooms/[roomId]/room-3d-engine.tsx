@@ -9,7 +9,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type Dance = 'groove' | 'bounce' | 'sway' | 'hype'
 type Avatar = { skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
-type Position = { x:number; z:number; dance:Dance }
+type Position = { x:number; z:number; dance:Dance; seated?:boolean }
 type Remote = { id:string; position:Position; avatar:Avatar }
 const defaults: Avatar = { skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
 const skin: Record<Avatar['skin'],string> = { warm:'#a96745', deep:'#613b2d', light:'#e0ad83', tan:'#c9875c' }
@@ -33,6 +33,7 @@ function Dancer({ position, avatar, me=false, hidden=false }: { position:Positio
   const t = clock.getElapsedTime()
   const speed = avatar.dance === 'hype' ? 8 : avatar.dance === 'bounce' ? 5 : avatar.dance === 'sway' ? 2.2 : 3
   const phase = t * speed + position.x * .7
+  if(position.seated){ref.current.position.y=-.38;ref.current.rotation.x=-.12;if(leftArm.current)leftArm.current.rotation.z=-.08;if(rightArm.current)rightArm.current.rotation.z=.08;return}
   ref.current.position.y = Math.abs(Math.sin(phase)) * (avatar.dance === 'hype' ? .3 : avatar.dance === 'bounce' ? .2 : .1)
   ref.current.rotation.z = Math.sin(t*2.2 + position.z) * (avatar.dance === 'sway' ? .22 : .09)
   ref.current.rotation.y = Math.sin(t*1.4 + position.x) * .12
@@ -226,7 +227,10 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <pointLight position={[-5,3,1]} intensity={high?16:7} color="#42dfff"/>
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
   <MovingClubLights/>
-  <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.55} roughness={.38}/></mesh>
+  <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.62} roughness={.24}/></mesh>
+  {/* Glossy club floor: individual dark stone tiles with fine brass seams. */}
+  {Array.from({length:12},(_,ix)=>Array.from({length:9},(_,iz)=><mesh key={'floor-tile-'+ix+'-'+iz} position={[-8.25+ix*1.5,-.022,-5.6+iz*1.4]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[1.44,1.34]}/><meshStandardMaterial color={(ix+iz)%2===0?'#211c31':'#292238'} metalness={.58} roughness={.22}/></mesh>))}
+  {Array.from({length:12},(_,ix)=>Array.from({length:9},(_,iz)=><mesh key={'floor-glint-'+ix+'-'+iz} position={[-8.25+ix*1.5,-.019,-5.6+iz*1.4]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.025,1.32]}/><meshBasicMaterial color="#8d6b9f" transparent opacity={.3}/></mesh>))}
   <LuxuryClubArchitecture/>\n  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,4.15,-6.48]}><boxGeometry args={[5.5,.12,.1]}/><meshStandardMaterial color="#d45cff" emissive="#a72cff" emissiveIntensity={2.5}/></mesh>
@@ -243,6 +247,7 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
 
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
   <Dancer position={position} avatar={avatar} me hidden={view==='first'}/>
+  <Dancer position={{x:-5.9,z:-2.05,dance:'sway'}} avatar={{...defaults,skin:'deep',hair:'fade',outfit:'classic',dance:'sway'}}/>
   {[
    {x:-5.9,z:-.2,dance:'sway' as Dance,skin:'deep' as Avatar['skin'],outfit:'street' as Avatar['outfit']},
    {x:5.8,z:.5,dance:'hype' as Dance,skin:'tan' as Avatar['skin'],outfit:'vip' as Avatar['outfit']},
@@ -261,6 +266,16 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [remotes,setRemotes]=useState<Remote[]>([])
  const [quality,setQuality]=useState<'low'|'high'>('high')
  const [view,setView]=useState<'first'|'third'>('third')
+ const [controls,setControls]=useState<Record<string,string>>(()=>{try{return JSON.parse(sessionStorage.getItem('nightlife-controls:'+userId)||'null')||{forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'}}catch{return {forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'}}})
+ const [editingControls,setEditingControls]=useState(false)
+ const [listeningFor,setListeningFor]=useState<string|null>(null)
+ const [bartenderOpen,setBartenderOpen]=useState(false)
+ const [selectedDrink,setSelectedDrink]=useState('Tropical mocktail')
+ const [drinkChosen,setDrinkChosen]=useState(false)
+ const [pairOpen,setPairOpen]=useState(false)
+ const [incomingPair,setIncomingPair]=useState<string|null>(null)
+ const [pairedWith,setPairedWith]=useState<string|null>(null)
+ const touchInterval=useRef<ReturnType<typeof setInterval>|null>(null)
  const [editing,setEditing]=useState(false)
  const [saving,setSaving]=useState(false)
  const [status,setStatus]=useState('Connecting…')
@@ -268,7 +283,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const lastSent=useRef(0)
  const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
-  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,skin:a.skin,hair:a.hair,outfit:a.outfit})}
+  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit})}
  },[])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
@@ -279,7 +294,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
    const blockedStage=Math.abs(x)<2.5 && z < -3.7
    const blockedLeftLounge=Math.abs(x+5.2)<1.5 && z>-2.8 && z<-.8
    const blockedRightLounge=Math.abs(x-5.2)<1.5 && z>-2.8 && z<-.8
-   return blockedStage||blockedLeftLounge||blockedRightLounge?current:{x,z,dance:current.dance}
+   return blockedStage||blockedLeftLounge||blockedRightLounge?current:{x,z,dance:current.dance,seated:false}
   })
  },[])
  useEffect(()=>{
@@ -296,11 +311,16 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
     const skinTone=['warm','deep','light','tan'].includes(String(meta.skin))?meta.skin as Avatar['skin']:'warm'
     const hair=['curly','fade','braids','short'].includes(String(meta.hair))?meta.hair as Avatar['hair']:'curly'
     const outfit=['neon','street','vip','classic'].includes(String(meta.outfit))?meta.outfit as Avatar['outfit']:'neon'
-    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance},avatar:{skin:skinTone,hair,outfit,dance}})
+    list.push({id,position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{skin:skinTone,hair,outfit,dance}})
    }
    setRemotes(list)
   }
-  channel.on('presence',{event:'sync'},sync).subscribe(state=>{
+  channel.on('presence',{event:'sync'},sync)
+  channel.on('broadcast',{event:'pair-invite'},({payload})=>{if(payload?.to===userId&&typeof payload.from==='string')setIncomingPair(payload.from)})
+  channel.on('broadcast',{event:'pair-accepted'},({payload})=>{if(payload?.to===userId&&typeof payload.from==='string')setPairedWith(payload.from)})
+  channel.on('broadcast',{event:'pair-declined'},({payload})=>{if(payload?.to===userId)setStatus('Pair invitation declined')})
+  channel.on('broadcast',{event:'pair-ended'},({payload})=>{if(payload?.to===userId)setPairedWith(null)})
+  channel.subscribe(state=>{
    if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit})}
    else if(state==='CHANNEL_ERROR'||state==='TIMED_OUT')setStatus('Reconnecting…')
    else if(state==='CLOSED')setStatus('Disconnected')
@@ -309,11 +329,21 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
   // Connect once per authenticated room identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[clubId,userId])
+ useEffect(()=>{try{sessionStorage.setItem('nightlife-controls:'+userId,JSON.stringify(controls))}catch{}},[controls,userId])
  useEffect(()=>{
-  const keys:Record<string,[number,number]>={ArrowUp:[0,-.35],w:[0,-.35],W:[0,-.35],ArrowDown:[0,.35],s:[0,.35],S:[0,.35],ArrowLeft:[-.35,0],a:[-.35,0],A:[-.35,0],ArrowRight:[.35,0],d:[.35,0],D:[.35,0]}
-  const onKey=(e:KeyboardEvent)=>{if(['INPUT','TEXTAREA','SELECT'].includes((e.target as HTMLElement|null)?.tagName??''))return;const v=keys[e.key];if(v){e.preventDefault();move(v[0],v[1])}}
+  const onKey=(e:KeyboardEvent)=>{
+   if(['INPUT','TEXTAREA','SELECT'].includes((e.target as HTMLElement|null)?.tagName??''))return
+   if(listeningFor){e.preventDefault();setControls(c=>({...c,[listeningFor]:e.key}));setListeningFor(null);return}
+   const key=e.key.toLowerCase()
+   if(key===String(controls.forward).toLowerCase()||e.key==='ArrowUp'){e.preventDefault();move(0,-.35)}
+   else if(key===String(controls.backward).toLowerCase()||e.key==='ArrowDown'){e.preventDefault();move(0,.35)}
+   else if(key===String(controls.left).toLowerCase()||e.key==='ArrowLeft'){e.preventDefault();move(-.35,0)}
+   else if(key===String(controls.right).toLowerCase()||e.key==='ArrowRight'){e.preventDefault();move(.35,0)}
+   else if(key===String(controls.sit).toLowerCase()){e.preventDefault();setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})}
+   else if(key===String(controls.interact).toLowerCase()){e.preventDefault();setBartenderOpen(v=>!v)}
+  }
   window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)
- },[move])
+ },[move,controls,listeningFor])
  async function save(){
   setSaving(true);const supabase=createClient()
   const {error}=await supabase.from('profiles').update({avatar_config:avatar as unknown as Json,updated_at:new Date().toISOString()}).eq('id',userId)
@@ -325,21 +355,25 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
    <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Immersive 3D club</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
    <div className="flex items-center gap-3"><label className="text-xs text-zinc-400">Camera <select value={view} onChange={e=>setView(e.target.value as "first"|"third")} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="first">First person</option><option value="third">Third person</option></select></label><label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label></div>
   </header>
-  <div className="relative h-[420px] sm:h-[540px]">
+  <div className="relative h-[420px] touch-none sm:h-[540px]">
    <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,3.15,7.8],fov:view==='first'?78:58}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
     <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType="club" view={view}/>
    </Canvas>
-   <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">WASD / arrows move your character · camera follows you</div>
+   <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">Keyboard or touch controls · {position.seated?'Seated':'Standing'} · camera follows your character</div>
    {introOpen&&<div className="absolute inset-0 z-20 flex items-center justify-center bg-[#080711]/75 p-5 backdrop-blur-sm"><div className="max-w-lg rounded-3xl border border-lime-200/20 bg-[#11101d]/95 p-7 shadow-2xl"><p className="text-[10px] font-black uppercase tracking-[.3em] text-lime-300">Nightlife KE presents</p><h2 className="mt-3 text-3xl font-black">The night is yours.</h2><p className="mt-4 text-sm leading-7 text-zinc-300">When the city lights come on, the doors of this club open. The DJ sets the rhythm, the bar is ready, and familiar faces meet new ones. Walk from the dancefloor to the bar, settle into the lounge or find the VIP corner. This is one club, one shared night — the people make the memories.</p><p className="mt-4 text-xs text-zinc-500">Your character and the other guests move through the same persistent venue.</p><button onClick={()=>setIntroOpen(false)} className="mt-6 w-full rounded-xl bg-lime-300 px-5 py-3 font-black text-black">Enter the club</button></div></div>}
    <div className="absolute bottom-4 right-4 grid grid-cols-3 gap-1.5 sm:hidden">
-    <span/><button aria-label="Move forward" onClick={()=>move(0,-.7)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">↑</button><span/>
-    <button aria-label="Move left" onClick={()=>move(-.7,0)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">←</button>
-    <button aria-label="Move backward" onClick={()=>move(0,.7)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">↓</button>
-    <button aria-label="Move right" onClick={()=>move(.7,0)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">→</button>
+    <span/><button aria-label="Move forward" onPointerDown={e=>{e.preventDefault();move(0,-.55);touchInterval.current=window.setInterval(()=>move(0,-.32),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">↑</button><span/>
+    <button aria-label="Move left" onPointerDown={e=>{e.preventDefault();move(-.55,0);touchInterval.current=window.setInterval(()=>move(-.32,0),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">←</button>
+    <button aria-label="Move backward" onPointerDown={e=>{e.preventDefault();move(0,.55);touchInterval.current=window.setInterval(()=>move(0,.32),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">↓</button>
+    <button aria-label="Move right" onPointerDown={e=>{e.preventDefault();move(.55,0);touchInterval.current=window.setInterval(()=>move(.32,0),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">→</button>
    </div>
   </div>
+  <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-3"><button onClick={()=>setBartenderOpen(v=>!v)} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-200">Talk to bartender</button><button onClick={()=>setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">{position.seated?'Stand up':'Sit / stand'}</button><button onClick={()=>setPairOpen(v=>!v)} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-200">Pair / couple</button><button onClick={()=>setEditingControls(v=>!v)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Customize controls</button></div>
+  {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>setDrinkChosen(true)} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
+  {pairOpen&&<div className="mx-5 mb-4 rounded-2xl border border-fuchsia-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-fuchsia-200">Pair up · mutual consent</p><p className="mt-2 text-sm text-zinc-300">Invite someone to dance or spend time together. Pairing is open to everyone — no gender selection or assumptions.</p>{pairedWith&&<p className="mt-2 text-xs text-emerald-300">Paired with guest {pairedWith.slice(0,6)} · <button className="underline" onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-ended',payload:{to:pairedWith,from:userId}});setPairedWith(null)}}>End pairing</button></p>}<div className="mt-3 flex flex-wrap gap-2">{remotes.map(guest=><button key={guest.id} onClick={()=>void channelRef.current?.send({type:'broadcast',event:'pair-invite',payload:{to:guest.id,from:userId}})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Invite guest {guest.id.slice(0,6)}</button>)}{remotes.length===0&&<span className="text-xs text-zinc-500">No other guests are connected right now.</span>}</div>{incomingPair&&<div className="mt-3 rounded-xl bg-black/30 p-3"><p className="text-sm text-white">Guest {incomingPair.slice(0,6)} invited you to pair.</p><div className="mt-2 flex gap-2"><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-accepted',payload:{to:incomingPair,from:userId}});setPairedWith(incomingPair);setIncomingPair(null)}} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">Accept</button><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'pair-declined',payload:{to:incomingPair,from:userId}});setIncomingPair(null)}} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Decline</button></div></div>}</div>}
+  {editingControls&&<div className="mx-5 mb-4 rounded-2xl border border-white/10 bg-[#11101d] p-4"><p className="text-xs font-black uppercase tracking-widest text-lime-200">Choose your keys</p><p className="mt-1 text-xs text-zinc-400">Select an action, then press the key you want to assign. Arrow keys also remain available for movement.</p><div className="mt-3 flex flex-wrap gap-2">{Object.entries({forward:'Move forward',backward:'Move backward',left:'Move left',right:'Move right',sit:'Sit / stand',interact:'Talk to bartender'}).map(([action,label])=><button key={action} onClick={()=>setListeningFor(action)} className={`rounded-lg border px-3 py-2 text-xs ${listeningFor===action?'border-lime-300 bg-lime-300/10 text-lime-100':'border-white/10 text-zinc-200'}`}>{listeningFor===action?'Press a key…':`${label}: ${controls[action]}`}</button>)}</div><button onClick={()=>{setControls({forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'});setListeningFor(null)}} className="mt-3 text-xs text-zinc-400 underline">Reset controls</button></div>}
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
-   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Fixed club environment · {remotes.length+1} people connected</p></div>
+   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Fixed club environment · {remotes.length+1} people connected · {position.seated?'Seated':'Standing'}</p></div>
    <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'VIP',x:0,z:4.5},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   {editing&&<div className="grid gap-4 p-5 sm:grid-cols-2">{(Object.keys(choices) as (keyof Avatar)[]).map(key=><label key={key} className="text-xs font-bold capitalize text-zinc-400">{key}<select value={avatar[key]} onChange={e=>setAvatar(a=>({...a,[key]:e.target.value} as Avatar))} className="mt-2 w-full rounded-xl border border-white/10 bg-[#12141e] px-4 py-3 text-sm text-white">{choices[key].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>)}<div className="sm:col-span-2"><button onClick={()=>void save()} disabled={saving} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-black disabled:opacity-50">{saving?'Saving…':'Save character'}</button></div></div>}
