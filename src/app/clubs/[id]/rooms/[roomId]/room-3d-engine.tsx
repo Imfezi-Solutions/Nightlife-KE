@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Clone, Sparkles, useAnimations, useGLTF } from '@react-three/drei'
+import { Clone, OrbitControls, Sparkles, useAnimations, useGLTF } from '@react-three/drei'
 import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
@@ -29,9 +29,15 @@ function HumanModel({person,dance,seated}:{person:Avatar['person'];dance:Dance;s
   carlos:'https://cdn.jsdelivr.net/gh/memoriesrohit/avatar-studio@main/models/carlos_casual.glb',
  }
  const {scene,animations}=useGLTF(models[person])
- const clip=seated?'Idle':dance==='hype'?'Cheer':dance==='bounce'?'Clap':dance==='groove'?'Clap':'Idle'
+ const wanted = seated ? ['idle','stand'] : dance==='hype' ? ['dance','cheer','clap','idle'] : dance==='bounce' ? ['dance','bounce','clap','idle'] : dance==='groove' ? ['dance','groove','idle','clap'] : ['dance','sway','idle']
+ const clipName = animations.find(a=>wanted.some(word=>a.name.toLowerCase().includes(word)))?.name ?? animations[0]?.name
  const {actions}=useAnimations(animations,group)
- useEffect(()=>{const action=actions[clip]??actions.Idle;if(!action)return;action.reset().fadeIn(.25).play();return()=>{action.fadeOut(.2)}},[actions,clip])
+ useEffect(()=>{
+  const action=(clipName ? actions[clipName] : undefined) ?? Object.values(actions).find(a=>!!a)
+  if(!action)return
+  action.reset().fadeIn(.35).setLoop(2201,Infinity).play()
+  return()=>{action.fadeOut(.25)}
+ },[actions,clipName])
  return <group ref={group}><Clone object={scene}/></group>
 }
 
@@ -47,14 +53,15 @@ function Dancer({ position, avatar, me=false, hidden=false, wander=false }: { po
   const beat=t*(position.dance==='hype'?5.8:position.dance==='bounce'?4.4:position.dance==='sway'?2.2:3.1)+position.x*1.7
   ref.current.position.x=position.x+driftX
   ref.current.position.z=position.z+driftZ
-  ref.current.position.y=Math.abs(Math.sin(beat))*(position.dance==='hype'?.14:position.dance==='bounce'?.11:.055)
-  ref.current.rotation.y=wander?Math.atan2(Math.cos(t*.32+position.x*1.7)*.62,Math.sin(t*.27+position.z*1.3)*.42):Math.sin(t*1.1+position.x)*.14
-  ref.current.rotation.z=Math.sin(t*1.8+position.z)*(position.dance==='sway'?.13:.045)
+  const bounce=position.dance==='hype'?.28:position.dance==='bounce'?.23:position.dance==='sway'?.075:.12
+  ref.current.position.y=Math.abs(Math.sin(beat))*bounce
+  ref.current.rotation.y=wander?Math.atan2(Math.cos(t*.32+position.x*1.7)*.62,Math.sin(t*.27+position.z*1.3)*.42):Math.sin(t*.9+position.x)*.24
+  ref.current.rotation.z=Math.sin(t*1.8+position.z)*(position.dance==='sway'?.2:.085)
   if(motion.current){
-   motion.current.rotation.x=Math.sin(beat*.5)*.09
-   motion.current.rotation.y=Math.sin(beat*.7)*.12
-   motion.current.rotation.z=Math.sin(beat)*(position.dance==='hype'?.16:position.dance==='sway'?.13:.085)
-   motion.current.position.y=Math.abs(Math.sin(beat*.5))*.045
+   motion.current.rotation.x=Math.sin(beat*.5)*.18
+   motion.current.rotation.y=Math.sin(beat*.7)*.22
+   motion.current.rotation.z=Math.sin(beat)*(position.dance==='hype'?.3:position.dance==='sway'?.24:.17)
+   motion.current.position.y=Math.abs(Math.sin(beat*.5))*.09
   }
  })
  if(hidden)return null
@@ -260,7 +267,8 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
    {x:3.9,z:3.3,dance:'groove' as Dance,person:'daniel' as Avatar['person']},
   ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}} wander/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
-  <FollowCamera position={position} mode={view}/>
+  {view==='first' && <FollowCamera position={position} mode="first"/>}
+  {view==='third' && <OrbitControls makeDefault enabled enableRotate enablePan enableZoom target={[position.x,1,position.z]} minDistance={3.2} maxDistance={17} minPolarAngle={0.18} maxPolarAngle={Math.PI/2.02} enableDamping dampingFactor={.09} rotateSpeed={.72} />}
  </>
 }
 
