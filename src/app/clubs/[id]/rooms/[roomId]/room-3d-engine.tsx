@@ -37,24 +37,34 @@ function HumanModel({person,dance,seated}:{person:Avatar['person'];dance:Dance;s
 
 function Dancer({ position, avatar, me=false, hidden=false, wander=false }: { position:Position; avatar:Avatar; me?:boolean; hidden?:boolean; wander?:boolean }) {
  const ref = useRef<Group>(null)
+ const motion = useRef<Group>(null)
  useFrame(({clock}) => {
   if (!ref.current) return
   const t=clock.getElapsedTime()
-  if(position.seated){ref.current.position.y=-.18;ref.current.rotation.x=-.06;return}
-  const driftX=wander?Math.sin(t*.32+position.x*1.7)*.42:0
-  const driftZ=wander?Math.cos(t*.27+position.z*1.3)*.3:0
+  if(position.seated){ref.current.position.y=-.18;ref.current.rotation.x=-.06;if(motion.current){motion.current.rotation.set(0,0,0);motion.current.position.y=0}return}
+  const driftX=wander?Math.sin(t*.32+position.x*1.7)*.62:0
+  const driftZ=wander?Math.cos(t*.27+position.z*1.3)*.42:0
+  const beat=t*(position.dance==='hype'?5.8:position.dance==='bounce'?4.4:position.dance==='sway'?2.2:3.1)+position.x*1.7
   ref.current.position.x=position.x+driftX
   ref.current.position.z=position.z+driftZ
-  ref.current.position.y=Math.abs(Math.sin(t*(avatar.dance==='hype'?7:avatar.dance==='bounce'?4:2.5)+position.x))*(avatar.dance==='hype'?.08:.025)
-  ref.current.rotation.y=wander?Math.atan2(Math.cos(t*.32+position.x*1.7)*.42,Math.sin(t*.27+position.z*1.3)*.3):Math.sin(t*1.1+position.x)*.08
-  ref.current.rotation.z=Math.sin(t*1.8+position.z)*(avatar.dance==='sway'?.08:.025)
+  ref.current.position.y=Math.abs(Math.sin(beat))*(position.dance==='hype'?.14:position.dance==='bounce'?.11:.055)
+  ref.current.rotation.y=wander?Math.atan2(Math.cos(t*.32+position.x*1.7)*.62,Math.sin(t*.27+position.z*1.3)*.42):Math.sin(t*1.1+position.x)*.14
+  ref.current.rotation.z=Math.sin(t*1.8+position.z)*(position.dance==='sway'?.13:.045)
+  if(motion.current){
+   motion.current.rotation.x=Math.sin(beat*.5)*.09
+   motion.current.rotation.y=Math.sin(beat*.7)*.12
+   motion.current.rotation.z=Math.sin(beat)*(position.dance==='hype'?.16:position.dance==='sway'?.13:.085)
+   motion.current.position.y=Math.abs(Math.sin(beat*.5))*.045
+  }
  })
  if(hidden)return null
  const person=['sophia','daniel','priya','carlos'].includes(avatar.person)?avatar.person:'daniel'
  return <group ref={ref} position={[position.x,0,position.z]}>
-  <Suspense fallback={null}>
-   <group rotation={[0,Math.PI,0]}><HumanModel person={person} dance={position.dance} seated={!!position.seated}/></group>
-  </Suspense>
+  <group ref={motion}>
+   <Suspense fallback={null}>
+    <group rotation={[0,Math.PI,0]}><HumanModel person={person} dance={position.dance} seated={!!position.seated}/></group>
+   </Suspense>
+  </group>
   {me&&<mesh position={[0,2.05,0]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#c7ff38"/></mesh>}
  </group>
 }
