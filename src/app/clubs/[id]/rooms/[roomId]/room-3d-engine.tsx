@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Sparkles } from '@react-three/drei'
+import { Sparkles } from '@react-three/drei'
 import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
@@ -205,7 +205,16 @@ function PremiumDJBooth() {
  </group>
 }
 
-function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string }) {
+
+function FollowCamera({position,mode}:{position:Position;mode:'first'|'third'}) {
+ useFrame(({camera})=>{
+  if(mode==='first'){camera.position.lerp({x:position.x,y:1.63,z:position.z+.02},.22);camera.lookAt(position.x,1.58,position.z-8)}
+  else{camera.position.lerp({x:position.x,y:3.15,z:position.z+5.6},.12);camera.lookAt(position.x,1.15,position.z-1.6)}
+ })
+ return null
+}
+
+function Venue({ position, remotes, avatar, high, roomType }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string; view:'first'|'third' }) {
  return <>
   <color attach="background" args={['#080711']}/>
   <fog attach="fog" args={['#080711',14,28]}/>
@@ -229,7 +238,7 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
   {(roomType === 'bar' || roomType === 'lounge' || roomType === 'vip_lounge') && <BarDrinks roomType={roomType}/>}
 
   {high && <Sparkles count={65} scale={[15,4,12]} size={2} speed={.25} color="#d7a5ff"/>}
-  <Dancer position={position} avatar={avatar} me/>
+  <Dancer position={position} avatar={avatar} me hidden={view==='first'}/>
   {[
    {x:-5.9,z:-.2,dance:'sway' as Dance,skin:'deep' as Avatar['skin'],outfit:'street' as Avatar['outfit']},
    {x:5.8,z:.5,dance:'hype' as Dance,skin:'tan' as Avatar['skin'],outfit:'vip' as Avatar['outfit']},
@@ -237,7 +246,7 @@ function Venue({ position, remotes, avatar, high, roomType }: { position:Positio
    {x:3.9,z:3.3,dance:'groove' as Dance,skin:'warm' as Avatar['skin'],outfit:'neon' as Avatar['outfit']},
   ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,skin:guest.skin,outfit:guest.outfit,dance:guest.dance}}/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
-  <OrbitControls target={[0,1,-.4]} enablePan={false} minDistance={8} maxDistance={17} minPolarAngle={.65} maxPolarAngle={1.35}/>
+  <FollowCamera position={position} mode={view}/>
  </>
 }
 
@@ -247,6 +256,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
  const [quality,setQuality]=useState<'low'|'high'>('high')
+ const [view,setView]=useState<'first'|'third'>('third')
  const [editing,setEditing]=useState(false)
  const [saving,setSaving]=useState(false)
  const [status,setStatus]=useState('Connecting…')
@@ -308,14 +318,14 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
  function dance(d:Dance){setPosition(current=>({...current,dance:d}));setAvatar(a=>({...a,dance:d}))}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Block-style 3D venue</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
-   <label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label>
+   <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Immersive 3D club</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
+   <div className="flex items-center gap-3"><label className="text-xs text-zinc-400">Camera <select value={view} onChange={e=>setView(e.target.value as "first"|"third")} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="first">First person</option><option value="third">Third person</option></select></label><label className="text-xs text-zinc-400">Graphics <select value={quality} onChange={e=>setQuality(e.target.value as 'low'|'high')} className="ml-2 rounded-lg border border-white/10 bg-[#151421] px-2 py-2 text-white"><option value="low">Low data</option><option value="high">High quality</option></select></label></div>
   </header>
   <div className="relative h-[420px] sm:h-[540px]">
-   <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,7.5,12.5],fov:48}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
-    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType="club"/>
+   <Canvas shadows={quality==='high'} dpr={quality==='high'?[1,1.5]:1} camera={{position:[0,3.15,7.8],fov:view==='first'?78:58}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
+    <Venue position={position} remotes={remotes} avatar={avatar} high={quality==='high'} roomType="club" view={view}/>
    </Canvas>
-   <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">WASD / arrows to move · drag to look</div>
+   <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/65 px-3 py-2 text-[11px] text-zinc-200">WASD / arrows move your character · camera follows you</div>
    {introOpen&&<div className="absolute inset-0 z-20 flex items-center justify-center bg-[#080711]/75 p-5 backdrop-blur-sm"><div className="max-w-lg rounded-3xl border border-lime-200/20 bg-[#11101d]/95 p-7 shadow-2xl"><p className="text-[10px] font-black uppercase tracking-[.3em] text-lime-300">Nightlife KE presents</p><h2 className="mt-3 text-3xl font-black">The night is yours.</h2><p className="mt-4 text-sm leading-7 text-zinc-300">When the city lights come on, the doors of this club open. The DJ sets the rhythm, the bar is ready, and familiar faces meet new ones. Walk from the dancefloor to the bar, settle into the lounge or find the VIP corner. This is one club, one shared night — the people make the memories.</p><p className="mt-4 text-xs text-zinc-500">Your character and the other guests move through the same persistent venue.</p><button onClick={()=>setIntroOpen(false)} className="mt-6 w-full rounded-xl bg-lime-300 px-5 py-3 font-black text-black">Enter the club</button></div></div>}
    <div className="absolute bottom-4 right-4 grid grid-cols-3 gap-1.5 sm:hidden">
     <span/><button aria-label="Move forward" onClick={()=>move(0,-.7)} className="h-11 w-11 rounded-xl bg-lime-300 text-lg font-black text-black">↑</button><span/>
@@ -325,7 +335,7 @@ export default function Room3DEngine({clubId,userId,displayName,initialConfig}:{
    </div>
   </div>
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
-   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">One shared club world · {remotes.length+1} people connected</p></div>
+   <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Fixed club environment · {remotes.length+1} people connected</p></div>
    <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'VIP',x:0,z:4.5},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   {editing&&<div className="grid gap-4 p-5 sm:grid-cols-2">{(Object.keys(choices) as (keyof Avatar)[]).map(key=><label key={key} className="text-xs font-bold capitalize text-zinc-400">{key}<select value={avatar[key]} onChange={e=>setAvatar(a=>({...a,[key]:e.target.value} as Avatar))} className="mt-2 w-full rounded-xl border border-white/10 bg-[#12141e] px-4 py-3 text-sm text-white">{choices[key].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>)}<div className="sm:col-span-2"><button onClick={()=>void save()} disabled={saving} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-black disabled:opacity-50">{saving?'Saving…':'Save character'}</button></div></div>}
