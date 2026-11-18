@@ -11,15 +11,15 @@ export type DJMix = {
   bass: number
   treble: number
   filter: number
-  deckAUrl: string | null
-  deckBUrl: string | null
+  deckAPath: string | null
+  deckBPath: string | null
   deckAName: string
   deckBName: string
   playbackStartedAt: number | null
 }
 export const DEFAULT_DJ_MIX: DJMix = {
   playing: false, bpm: 118, crossfader: 0, master: 0.72, bass: 0, treble: 0, filter: 18000,
-  deckAUrl: null, deckBUrl: null, deckAName: '', deckBName: '', playbackStartedAt: null,
+  deckAPath: null, deckBPath: null, deckAName: '', deckBName: '', playbackStartedAt: null,
 }
 type Props = {
   roomId: string
@@ -50,6 +50,8 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   const [uploading, setUploading] = useState<'A' | 'B' | null>(null)
   const [error, setError] = useState('')
   const [rightsConfirmed, setRightsConfirmed] = useState(false)
+  const [deckAUrl, setDeckAUrl] = useState<string | null>(null)
+  const [deckBUrl, setDeckBUrl] = useState<string | null>(null)
 
   const ensureAudio = useCallback(async () => {
     if (!rig.current) {
@@ -93,6 +95,38 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   }, [mix.crossfader, mix.master, mix.bass, mix.treble, mix.filter, mix.bpm])
 
   useEffect(() => {
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const refresh = async () => {
+      const path = mix.deckAPath
+      if (!path) { setDeckAUrl(null); return }
+      const { data, error } = await createClient().storage.from('room-audio').createSignedUrl(path, 3600)
+      if (cancelled) return
+      if (error || !data?.signedUrl) { setError(error?.message || 'Could not prepare Deck A for room playback.'); setDeckAUrl(null) }
+      else { setDeckAUrl(data.signedUrl); setError('') }
+      timer = setTimeout(refresh, 50 * 60 * 1000)
+    }
+    void refresh()
+    return () => { cancelled = true; if (timer) clearTimeout(timer) }
+  }, [roomId, mix.deckAPath])
+
+  useEffect(() => {
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const refresh = async () => {
+      const path = mix.deckBPath
+      if (!path) { setDeckBUrl(null); return }
+      const { data, error } = await createClient().storage.from('room-audio').createSignedUrl(path, 3600)
+      if (cancelled) return
+      if (error || !data?.signedUrl) { setError(error?.message || 'Could not prepare Deck B for room playback.'); setDeckBUrl(null) }
+      else { setDeckBUrl(data.signedUrl); setError('') }
+      timer = setTimeout(refresh, 50 * 60 * 1000)
+    }
+    void refresh()
+    return () => { cancelled = true; if (timer) clearTimeout(timer) }
+  }, [roomId, mix.deckBPath])
+
+  useEffect(() => {
     const audio = rig.current
     if (!audio) return
     const updateDeck = (element: HTMLAudioElement, url: string | null) => {
@@ -102,8 +136,8 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
         element.load()
       }
     }
-    updateDeck(audio.elementA, mix.deckAUrl)
-    updateDeck(audio.elementB, mix.deckBUrl)
+    updateDeck(audio.elementA, deckAUrl)
+    updateDeck(audio.elementB, deckBUrl)
     if (!mix.playing) {
       audio.elementA.pause(); audio.elementB.pause()
       return
@@ -121,7 +155,7 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
     }
     void syncPlay(audio.elementA)
     void syncPlay(audio.elementB)
-  }, [mix.deckAUrl, mix.deckBUrl, mix.playing, mix.playbackStartedAt])
+  }, [deckAUrl, deckBUrl, mix.playing, mix.playbackStartedAt])
 
   useEffect(() => () => {
     if (rig.current) {
@@ -135,6 +169,9 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   const enableAudio = async () => {
     try {
       const audio = await ensureAudio()
+      audio.elementA.src = deckAUrl || ''
+      audio.elementB.src = deckBUrl || ''
+      audio.elementA.load(); audio.elementB.load()
       if (mix.playing) {
         await Promise.all([audio.elementA.play().catch(()=>{}), audio.elementB.play().catch(()=>{})])
       }
@@ -179,8 +216,8 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
       if (urlError || !data?.signedUrl) throw urlError || new Error('Could not prepare the shared track URL.')
       const key = deck === 'A' ? 'deckA' : 'deckB'
       const next = { ...mix, playing: false, playbackStartedAt: null } as DJMix
-      if (key === 'deckA') { next.deckAUrl = data.signedUrl; next.deckAName = file.name }
-      else { next.deckBUrl = data.signedUrl; next.deckBName = file.name }
+      if (key === 'deckA') { next.deckAPath = path; next.deckAName = file.name }
+      else { next.deckBPath = path; next.deckBName = file.name }
       onMixChange(next)
       setRightsConfirmed(false)
     } catch (e) {
@@ -216,7 +253,7 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
         <label className="text-xs text-zinc-300">Bass EQ · {mix.bass.toFixed(1)} dB<input aria-label="Bass EQ" type="range" min="-18" max="18" step=".5" value={mix.bass} onChange={e=>change('bass',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
         <label className="text-xs text-zinc-300">Treble EQ · {mix.treble.toFixed(1)} dB<input aria-label="Treble EQ" type="range" min="-18" max="18" step=".5" value={mix.treble} onChange={e=>change('treble',Number(e.target.value))} className="mt-2 w-full accent-fuchsia-300"/></label>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>onMixChange({...mix,...DEFAULT_DJ_MIX,deckAUrl:mix.deckAUrl,deckBUrl:mix.deckBUrl,deckAName:mix.deckAName,deckBName:mix.deckBName})} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-zinc-300">Reset mixer</button><span className="self-center text-[11px] text-zinc-500">Every guest must tap Enable room audio once. Upload only music you own or are licensed to play.</span></div>
+      <div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>onMixChange({...mix,...DEFAULT_DJ_MIX,deckAPath:mix.deckAPath,deckBPath:mix.deckBPath,deckAName:mix.deckAName,deckBName:mix.deckBName})} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-zinc-300">Reset mixer</button><span className="self-center text-[11px] text-zinc-500">Every guest must tap Enable room audio once. Upload only music you own or are licensed to play.</span></div>
       {error&&<p role="alert" className="mt-3 text-xs text-rose-300">{error}</p>}
     </div></div>}
   </div>
