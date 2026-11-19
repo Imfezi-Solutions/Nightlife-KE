@@ -452,7 +452,6 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  function challenge(){const target=remotes.find(g=>g.id===combatTarget);if(!target){setCombatNotice('Choose a connected player first.');return}if(Math.hypot(position.x,position.z)>3.4||Math.hypot(target.position.x,target.position.z)>3.4){setCombatNotice('Both players must stand inside the marked sparring arena.');return}void channelRef.current?.send({type:'broadcast',event:'sparring-challenge',payload:{to:target.id,from:userId}});setCombatNotice('Challenge sent. No fighting starts until they accept.')}
  function endSparring(){if(duelWith)void channelRef.current?.send({type:'broadcast',event:'sparring-ended',payload:{to:duelWith,from:userId}});setDuelWith(null);setIncomingChallenge(null);setHealth(100);setCombatNotice('Sparring ended. You are safe.')}
  function sendEmote(emoji:string){void channelRef.current?.send({type:'broadcast',event:'room-emote',payload:{from:userId,emoji,name:displayName||'Guest'}});setRoomEmote({emoji,from:'You'});window.setTimeout(()=>setRoomEmote(null),2200)}
-}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
    <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Immersive 3D club</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
