@@ -65,7 +65,7 @@ export default function RoomCommunityHub({ roomId, clubId, userId, displayName, 
   useEffect(()=>{
     let active=true
     void supabase.from('user_blocks').select('blocked_user_id').eq('blocker_id',userId).then(({data})=>{
-      if(active)setBlocked((data??[]).map(row=>row.blocked_user_id))
+      if(active){const ids=(data??[]).map(row=>row.blocked_user_id);setBlocked(ids);ids.forEach(onBlocked)}
     })
     return ()=>{active=false}
   },[supabase,userId])
