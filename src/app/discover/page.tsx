@@ -9,7 +9,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
   const userId = claims?.claims?.sub
   if (!userId) redirect('/login')
   const params = await searchParams
-  const selectedCounty = params.county && /^\\d+$/.test(params.county) ? Number(params.county) : null
+  const selectedCounty = params.county && /^\d+$/.test(params.county) ? Number(params.county) : null
   let clubsQuery = supabase.from('clubs')
     .select('id,name,slug,description,capacity,county_id')
     .eq('status','active')
