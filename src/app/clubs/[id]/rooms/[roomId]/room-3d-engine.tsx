@@ -355,7 +355,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
   if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit,person:a.person,name:displayName||'Guest'})}
- },[])
+ },[displayName])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
  const move=useCallback((dx:number,dz:number)=>{
