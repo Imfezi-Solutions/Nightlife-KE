@@ -1,4 +1,12 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Terms and Conditions',
+  description: 'Read the terms for using Nightlife KE, a social and virtual nightlife platform for adults aged 18 and over in Kenya.',
+  alternates: { canonical: '/terms' },
+  robots: { index: true, follow: true },
+}
 
 export default function TermsPage() {
   return <main className="mx-auto min-h-screen max-w-3xl px-5 py-12 text-zinc-200">
