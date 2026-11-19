@@ -27,6 +27,7 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
   supabase.from('dj_sessions').select('*').eq('room_id',roomId).maybeSingle(),
   supabase.from('platform_djs').select('user_id').eq('user_id',userId).eq('is_active',true).maybeSingle(),
   supabase.from('profiles').select('display_name,avatar_config').eq('id',userId).maybeSingle(),
+  supabase.from('rooms').select('id').eq('club_id',id).eq('room_type','vip').eq('is_active',true).limit(1).maybeSingle(),
  ])
  return <main className="mx-auto min-h-screen max-w-5xl px-4 py-8 sm:px-6">
   <Link href={'/clubs/'+id} className="text-sm text-zinc-400 hover:text-white">← Back to {club?.name??'club'}</Link>
