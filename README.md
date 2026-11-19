@@ -136,3 +136,20 @@ Owners can edit club name, description, visibility and capacity (2–30, never b
 ### Profile privacy
 
 The base `profiles` table is now readable only by its owner. Other signed-in members use the restricted `get_public_profiles` RPC, which returns only the fields needed for club member cards and avatar presentation; it deliberately omits gender and any private account data. The underlying `profiles` table is owner-readable only. Profile edits remain owner-only.
+
+
+### Independent age verification (Didit Sandbox)
+
+The platform uses Didit's published **Basic KYC** workflow in the Imfezi Solutions Sandbox application. The workflow enforces a minimum age of 18 from the identity document for Kenya and includes liveness and face matching. The workflow and application IDs are pinned in the preview configuration; do not replace them with Live IDs while testing.
+
+Server-only Preview variables for branch `vercel-preview`:
+
+- `DIDIT_API_KEY`: sandbox application API key (never expose it to browser code).
+- `DIDIT_WORKFLOW_ID`: `604e2b8e-549a-4036-8611-d4b99c775e49`.
+- `DIDIT_APPLICATION_ID`: `c4f100b9-b5b0-4ebd-b354-d0e0c385c1a5`.
+- `DIDIT_ENVIRONMENT`: `sandbox`.
+- `DIDIT_WEBHOOK_SECRET`: secret for the dedicated Didit webhook destination.
+
+Create a Didit V3 webhook destination for `https://nightlife-ke-git-vercel-preview-imfezisolutions.vercel.app/api/age-verification/didit/webhook`, subscribe to `status.updated`, and save its `secret_shared_key` as `DIDIT_WEBHOOK_SECRET` in the Preview environment. The endpoint verifies `X-Signature-V2`, its timestamp window, the application/environment/workflow IDs, the user correlation ID and the approved ID-document result. Only a trusted approved result can set an age-verification row to `verified`; pending, review, declined and expired sessions remain locked.
+
+Nightlife KE stores the provider session reference and verification status, not document images or selfie media. Didit's workflow currently returns all feature result data to the relying party; review the workflow's Returned data settings and minimize fields before any Live rollout. Sandbox checks are mocked and are not billed. Live verification is disabled in this integration until Imfezi explicitly configures and approves a separate production rollout.

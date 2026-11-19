@@ -18,10 +18,8 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
   const [session, setSession] = useState(initialSession)
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
-  const [assetId, setAssetId] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [rightsReference, setRightsReference] = useState('')
-  const [sourceType, setSourceType] = useState<'original_upload'|'licensed_provider'|'public_domain'>('original_upload')
+  const [rightsConfirmed, setRightsConfirmed] = useState(false)
   const [duration, setDuration] = useState('180000')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -53,15 +51,11 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
       setAudioUrl('')
       setAudioNotice('')
       if (!activeTrack) return
-      if (activeTrack.source_type === 'licensed_provider') {
-        setAudioNotice('This track requires its licensed provider adapter. No third-party stream is opened directly.')
-        return
-      }
       const supabase = createClient()
       const { data, error } = await supabase.storage.from('room-audio').createSignedUrl(activeTrack.provider_asset_id, 3600)
       if (cancelled) return
       if (error || !data?.signedUrl) {
-        setAudioNotice('The approved audio asset could not be loaded for this room.')
+        setAudioNotice('The uploaded audio file could not be loaded. Check that the file format is playable in your browser.')
         return
       }
       setAudioUrl(data.signedUrl)
@@ -104,26 +98,25 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
     event.preventDefault()
     setBusy(true); setNotice('')
     const supabase = createClient()
-    let storedAssetId = assetId.trim()
+    let storedAssetId = ''
     let uploadedPath = ''
-    if (sourceType !== 'licensed_provider') {
-      if (!audioFile) { setBusy(false); setNotice('Choose an original or public-domain audio file to upload.'); return }
+    {
+      if (!audioFile) { setBusy(false); setNotice('Choose an audio file to upload.'); return }
       if (audioFile.size > 25 * 1024 * 1024) { setBusy(false); setNotice('Audio files must be 25 MB or smaller.'); return }
-      const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/mp4','audio/aac','audio/flac']
-      if (!allowed.includes(audioFile.type)) { setBusy(false); setNotice('Use an MP3, WAV, OGG, MP4, AAC or FLAC audio file.'); return }
+      const audioExtension = /\.(mp3|wav|ogg|oga|m4a|mp4|aac|flac|webm|weba)$/i.test(audioFile.name)
+      if (audioFile.type && !audioFile.type.startsWith('audio/') && !audioExtension) { setBusy(false); setNotice('Choose a supported audio file (MP3, WAV, OGG, M4A, AAC, FLAC or WebM).'); return }
+      if (!audioFile.type && !audioExtension) { setBusy(false); setNotice('Choose a supported audio file (MP3, WAV, OGG, M4A, AAC, FLAC or WebM).'); return }
       const safeName = audioFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       uploadedPath = roomId + '/' + currentUserId + '/' + crypto.randomUUID() + '-' + safeName
       const { error: uploadError } = await supabase.storage.from('room-audio').upload(uploadedPath, audioFile, { contentType: audioFile.type, upsert: false })
       if (uploadError) { setBusy(false); setNotice('Audio upload failed. Check your DJ permission and file type.'); return }
       storedAssetId = uploadedPath
-    } else if (!storedAssetId) {
-      setBusy(false); setNotice('Enter the asset identifier supplied by the licensed music provider.'); return
     }
 
     const { error } = await supabase.from('dj_queue').insert({
       room_id: roomId, added_by: currentUserId, title: title.trim(), artist: artist.trim() || null,
-      provider_asset_id: storedAssetId, source_type: sourceType, rights_reference: rightsReference.trim(),
-      duration_ms: Number(duration), rights_status: 'pending',
+      provider_asset_id: storedAssetId, source_type: 'original_upload', rights_reference: 'Uploader confirms they own or have permission to use this recording.',
+      duration_ms: Number(duration), rights_status: 'approved',
     })
     setBusy(false)
     if (error) {
@@ -131,8 +124,8 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
       setNotice('Could not submit this track. Check your DJ permission and the details.')
       return
     }
-    setTitle(''); setArtist(''); setAssetId(''); setAudioFile(null); setRightsReference('')
-    setNotice('Submitted for rights review. The uploaded file remains private until approval.')
+    setTitle(''); setArtist(''); setAudioFile(null); setRightsConfirmed(false)
+    setNotice('Track added to the room queue. It is ready for playback.')
   }
 
   async function setPlayback(status: 'playing'|'paused'|'stopped', trackId?: string) {
@@ -162,8 +155,8 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
     <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" onError={() => setAudioNotice('Audio could not be played on this device.')} className="hidden" />
     <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
       <p className="text-xs text-zinc-500">NOW SELECTED</p>
-      <p className="mt-1 font-bold">{activeTrack?.title ?? 'No approved track selected'}</p>
-      <p className="text-sm text-zinc-400">{activeTrack?.artist ?? 'Approved room audio will appear here'}</p>
+      <p className="mt-1 font-bold">{activeTrack?.title ?? 'No track selected'}</p>
+      <p className="text-sm text-zinc-400">{activeTrack?.artist ?? 'Room audio will appear here'}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {!audioEnabled && <button disabled={!activeTrack || !audioUrl} onClick={() => setAudioEnabled(true)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:opacity-40">Enable room audio</button>}
         {canControl && <div className="flex flex-wrap gap-2">
@@ -174,19 +167,18 @@ export default function DjConsole({ roomId, currentUserId, canControl, initialQu
         </div>}
       </div>
       {audioNotice && <p role="status" className="mt-3 text-xs text-amber-200">{audioNotice}</p>}
-      <p className="mt-3 text-xs text-zinc-500">Original uploads and verified public-domain recordings can play after rights approval. Licensed-provider playback needs a provider-specific adapter and agreement.</p>
+      <p className="mt-3 text-xs text-zinc-500">Room audio is available after upload. Your browser may still ask you to enable audio the first time.</p>
     </div>
-    <div><h3 className="font-bold">Approved queue</h3>{queue.length ? <ol className="mt-3 space-y-2">{queue.map((track,i)=><li key={track.id} className="flex justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm"><span>{i+1}. {track.title}{track.artist ? ' — ' + track.artist : ''}</span><span className="text-xs text-zinc-500">{Math.round(track.duration_ms/60000)} min</span></li>)}</ol> : <p className="mt-2 text-sm text-zinc-500">No rights-approved tracks in this room yet.</p>}</div>
+    <div><h3 className="font-bold">Room playlist</h3>{queue.length ? <ol className="mt-3 space-y-2">{queue.map((track,i)=><li key={track.id} className="flex justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm"><span>{i+1}. {track.title}{track.artist ? ' — ' + track.artist : ''}</span><span className="text-xs text-zinc-500">{Math.round(track.duration_ms/60000)} min</span></li>)}</ol> : <p className="mt-2 text-sm text-zinc-500">No tracks in this room yet.</p>}</div>
     {canControl && <form onSubmit={addTrack} className="space-y-3 border-t border-white/10 pt-5">
-      <h3 className="font-bold">Submit a track for rights review</h3>
-      <p className="text-xs text-zinc-400">Original/public-domain audio uploads stay private and unplayable until an authorized administrator reviews the rights evidence.</p>
+      <h3 className="font-bold">Add music to this room</h3>
+      <p className="text-xs text-zinc-400">Your upload is available in the room as soon as it finishes. No administrator song approval is required.</p>
       <input required maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Track title" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"/>
       <input maxLength={160} value={artist} onChange={e=>setArtist(e.target.value)} placeholder="Artist (optional)" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"/>
-      <select value={sourceType} onChange={e=>setSourceType(e.target.value as typeof sourceType)} className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"><option value="original_upload">Original music (rights owned)</option><option value="public_domain">Public-domain recording</option><option value="licensed_provider">Licensed music provider</option></select>
-      {sourceType === 'licensed_provider' ? <input required value={assetId} onChange={e=>setAssetId(e.target.value)} placeholder="Licensed provider asset ID" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"/> : <label className="block text-sm text-zinc-300">Audio file (25 MB max)<input required type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/flac" onChange={e=>setAudioFile(e.target.files?.[0]??null)} className="mt-2 block w-full text-xs text-zinc-400"/></label>}
+      <label className="block text-sm text-zinc-300">Audio file (25 MB max)<input required type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" onChange={e=>setAudioFile(e.target.files?.[0]??null)} className="mt-2 block w-full text-xs text-zinc-400"/></label>
       <input required min={1000} max={1800000} type="number" value={duration} onChange={e=>setDuration(e.target.value)} placeholder="Duration in milliseconds" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"/>
-      <textarea required minLength={4} maxLength={500} value={rightsReference} onChange={e=>setRightsReference(e.target.value)} placeholder="Rights evidence reference / license ID / provenance details" rows={2} className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm"/>
-      <button disabled={busy} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-black disabled:opacity-50">{busy?'Working…':'Submit for review'}</button>
+      <label className="flex items-start gap-2 text-xs text-zinc-400"><input type="checkbox" required checked={rightsConfirmed} onChange={e=>setRightsConfirmed(e.target.checked)} className="mt-0.5 accent-lime-300"/> I confirm I own this recording or have permission to upload and play it.</label>
+      <button disabled={busy || !rightsConfirmed} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-black disabled:opacity-50">{busy?'Uploading…':'Add to room'}</button>
     </form>}
     {notice && <p role="status" className="rounded-xl bg-white/5 p-3 text-sm text-zinc-300">{notice}</p>}
   </section>

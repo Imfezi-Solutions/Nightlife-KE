@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      age_declarations: {
+        Row: { accepted: boolean; declared_at: string; policy_version: string; user_id: string }
+        Insert: { accepted?: boolean; declared_at?: string; policy_version: string; user_id: string }
+        Update: { accepted?: boolean; declared_at?: string; policy_version?: string; user_id?: string }
+        Relationships: []
+      }
       age_verifications: {
         Row: {
           created_at: string
@@ -555,6 +561,41 @@ export type Database = {
           },
         ]
       }
+      club_item_inventory: {
+        Row: {
+          acquired_at: string
+          club_id: string
+          item_key: string
+          item_name: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          club_id: string
+          item_key: string
+          item_name: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          club_id?: string
+          item_key?: string
+          item_name?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_item_inventory_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string
@@ -665,6 +706,10 @@ export type Database = {
       }
       join_club: {
         Args: { p_club_id: string; p_invitation_code?: string }
+        Returns: Json
+      }
+      purchase_club_item: {
+        Args: { p_club_id: string; p_room_id: string; p_item_key: string }
         Returns: Json
       }
       preview_invite_club: {

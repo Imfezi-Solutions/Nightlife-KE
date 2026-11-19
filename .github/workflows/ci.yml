@@ -2,7 +2,7 @@ name: Nightlife KE CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, vercel-preview]
   pull_request:
     branches: [main]
 

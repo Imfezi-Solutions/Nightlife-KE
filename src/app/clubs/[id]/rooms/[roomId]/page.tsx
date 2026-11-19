@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import RoomChat from './room-chat'
 import DjConsole from './dj-console'
+import RoomVoiceChat from './room-voice-chat'
 import Room3DEngineLoader from './room-3d-engine-loader'
+import ClubShop from './club-shop'
 import { sendRoomMessageAction } from '../../../actions'
 import { createClient } from '@/lib/supabase/server'
 
@@ -13,13 +15,11 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
  const {data:claims}=await supabase.auth.getClaims()
  const userId=claims?.claims?.sub
  if(!userId)redirect('/login')
- const [{data:room},{data:membership},{data:ageVerification}]=await Promise.all([
+ const [{data:room},{data:membership}]=await Promise.all([
   supabase.from('rooms').select('id,club_id,name,room_type,capacity').eq('id',roomId).eq('club_id',id).eq('is_active',true).maybeSingle(),
   supabase.from('club_members').select('role').eq('club_id',id).eq('user_id',userId).maybeSingle(),
-  supabase.from('age_verifications').select('status,verified_at,expires_at').eq('user_id',userId).eq('status','verified').not('verified_at','is',null).gt('expires_at',new Date().toISOString()).limit(1).maybeSingle(),
  ])
  if(!room||!membership)notFound()
- if(!ageVerification)redirect('/discover?error=age_verification_required')
  const [{data:club},{data:messages},{data:musicQueue},{data:musicSession},{data:platformDj},{data:profile}]=await Promise.all([
   supabase.from('clubs').select('name').eq('id',id).maybeSingle(),
   supabase.from('chat_messages').select('id,club_id,room_id,author_id,body,created_at').eq('club_id',id).eq('room_id',roomId).order('created_at',{ascending:true}).limit(100),
@@ -33,7 +33,9 @@ export default async function ClubRoomPage({params,searchParams}:{params:Promise
   <header className="mt-7"><p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">{room.room_type.replace('_',' ')} · {room.capacity} capacity</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">{room.name}</h1><p className="mt-2 text-sm text-zinc-400">You’re in the room. Meet the people here and keep the conversation respectful.</p></header>
   {query.error==='slow_down'&&<p className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-sm text-amber-200">You’re sending messages too quickly. Wait a few seconds and try again.</p>}
   {query.error==='message'&&<p className="mt-5 rounded-xl border border-red-300/20 bg-red-300/5 p-3 text-sm text-red-200">Your message could not be sent. Please try again.</p>}
-  <Room3DEngineLoader roomId={roomId} userId={userId} displayName={profile?.display_name??'You'} initialConfig={profile?.avatar_config??null} roomType={room.room_type}/>
+  <Room3DEngineLoader roomId={roomId} clubId={id} userId={userId} displayName={profile?.display_name??'You'} initialConfig={profile?.avatar_config??null} roomType={room.room_type} canManageClub={['owner','moderator'].includes(membership.role)}/>
+  <ClubShop clubId={id} roomId={roomId}/>
+  <RoomVoiceChat roomId={roomId} userId={userId}/>
   <RoomChat clubId={id} roomId={roomId} currentUserId={userId} capacity={room.capacity} initialMessages={messages??[]}/>
   <DjConsole roomId={roomId} currentUserId={userId} canControl={['owner','moderator','dj'].includes(membership.role)||Boolean(platformDj)} initialQueue={musicQueue??[]} initialSession={musicSession??null}/>
   <form action={sendRoomMessageAction} className="glass mt-4 rounded-2xl p-3 sm:p-4">

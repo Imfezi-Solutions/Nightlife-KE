@@ -10,7 +10,7 @@ export default async function NewClubPage({ searchParams }: { searchParams: Prom
   const { data: counties } = await supabase.from('counties').select('id,name').order('name')
   const params = await searchParams
   const message = params.error === 'verification'
-    ? 'You need completed, valid 18+ verification before creating a club.'
+    ? 'Club creation is temporarily unavailable. Please try again.'
     : params.error ? 'We could not create your club. Check the details and try again.' : ''
 
   return <main className="mx-auto min-h-screen max-w-3xl px-5 py-10">
@@ -29,7 +29,7 @@ export default async function NewClubPage({ searchParams }: { searchParams: Prom
           <label className="block text-sm text-zinc-300">Maximum members<select name="capacity" defaultValue="30" className="mt-2 w-full rounded-xl border border-white/10 bg-[#11131b] px-4 py-3">{[10,15,20,25,30].map(n => <option key={n} value={n}>{n} people</option>)}</select></label>
         </div>
         <button className="w-full rounded-xl bg-lime-300 px-5 py-4 font-bold text-black hover:bg-lime-200">Create my club</button>
-        <p className="text-xs leading-5 text-zinc-500">Club creation is restricted to accounts with valid, independently confirmed 18+ status.</p>
+        <p className="text-xs leading-5 text-zinc-500">Nightlife KE is for adults aged 18 and over. Age verification is temporarily paused; the 18+ requirement remains.</p>
       </form>
     </div>
   </main>

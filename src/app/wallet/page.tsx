@@ -17,8 +17,6 @@ export default async function WalletPage(){
  const {data:claims}=await supabase.auth.getClaims()
  const userId=claims?.claims?.sub
  if(!userId)redirect('/login')
- const {data:age}=await supabase.from('age_verifications').select('id').eq('user_id',userId).eq('status','verified').not('verified_at','is',null).gt('expires_at',new Date().toISOString()).limit(1).maybeSingle()
- if(!age)redirect('/discover?error=age_verification_required')
  const [{data:wallet},{data:transactions}]=await Promise.all([
   supabase.from('wallets').select('balance_credits').eq('user_id',userId).maybeSingle(),
   supabase.from('wallet_transactions').select('id,entry_type,credits_delta,balance_after,description,created_at').eq('user_id',userId).order('created_at',{ascending:false}).limit(25),
