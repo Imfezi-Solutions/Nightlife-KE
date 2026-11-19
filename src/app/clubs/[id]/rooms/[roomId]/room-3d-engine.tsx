@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Clone, OrbitControls, Sparkles, useAnimations, useGLTF } from '@react-three/drei'
+import { Clone, OrbitControls, Sparkles, Text, useAnimations, useGLTF } from '@react-three/drei'
 import type { Group } from 'three'
 import { createClient } from '@/lib/supabase/client'
 import type { Json } from '@/lib/supabase/database.types'
@@ -242,15 +242,42 @@ function BoundedOrbitControls({position}:{position:Position}) {
   const orbit=controls.current
   if(!orbit)return
   const target=orbit.target
-  target.x=clamp(target.x,-7.65,7.65)
+  target.x=clamp(target.x,-7.65,17.1)
   target.y=clamp(target.y,.65,3.9)
   target.z=clamp(target.z,-5.85,5.95)
-  camera.position.x=clamp(camera.position.x,-8.15,8.15)
+  camera.position.x=clamp(camera.position.x,-8.15,18.0)
   camera.position.y=clamp(camera.position.y,.45,4.72)
   camera.position.z=clamp(camera.position.z,-6.28,6.48)
   orbit.update()
  })
- return <OrbitControls ref={controls} makeDefault enabled enableRotate enablePan enableZoom target={[position.x,1,position.z]} minDistance={3.2} maxDistance={13.5} minPolarAngle={0.18} maxPolarAngle={Math.PI/2.02} enableDamping dampingFactor={.09} rotateSpeed={.72}/>
+ return <OrbitControls ref={controls} makeDefault enabled enableRotate enablePan enableZoom target={[position.x,1,position.z]} minDistance={3.2} maxDistance={17.5} minPolarAngle={0.18} maxPolarAngle={Math.PI/2.02} enableDamping dampingFactor={.09} rotateSpeed={.72}/>
+}
+
+function VIPExtension() {
+ const gold='#d7b477', velvet='#33213f'
+ return <group>
+  <mesh rotation={[-Math.PI/2,0,0]} position={[13.65,-.035,0]} receiveShadow><planeGeometry args={[10.2,13.8]}/><meshStandardMaterial color="#171020" metalness={.48} roughness={.3}/></mesh>
+  <mesh rotation={[-Math.PI/2,0,0]} position={[13.65,.008,0]}><planeGeometry args={[7.4,10.8]}/><meshStandardMaterial color="#25152f" roughness={.92}/></mesh>
+  <mesh rotation={[-Math.PI/2,0,0]} position={[13.65,.014,0]}><ringGeometry args={[2.9,3.02,64]}/><meshBasicMaterial color="#d7b477"/></mesh>
+  <mesh position={[8.72,2.35,-2.35]}><boxGeometry args={[.34,4.7,4.5]}/><meshStandardMaterial color="#251a31" metalness={.3}/></mesh>
+  <mesh position={[8.72,2.35,2.35]}><boxGeometry args={[.34,4.7,4.5]}/><meshStandardMaterial color="#251a31" metalness={.3}/></mesh>
+  <mesh position={[8.72,4.55,0]}><boxGeometry args={[.48,.34,4.5]}/><meshStandardMaterial color={gold} metalness={.85}/></mesh>
+  {[-2.1,2.1].map(z=><group key={z} position={[8.72,0,z]}><mesh position={[0,2.2,0]}><boxGeometry args={[.42,4.4,.22]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh><mesh position={[0,.18,0]}><boxGeometry args={[.62,.36,.42]}/><meshStandardMaterial color="#f0d39b" metalness={.75}/></mesh><pointLight position={[.5,3.1,0]} color="#e8b96d" intensity={3} distance={5}/></group>)}
+  <mesh position={[18.62,2.45,0]}><boxGeometry args={[.3,4.9,13.8]}/><meshStandardMaterial color="#241a2e"/></mesh>
+  <mesh position={[13.65,2.45,-6.82]}><boxGeometry args={[10.2,4.9,.3]}/><meshStandardMaterial color="#2b2035"/></mesh>
+  <mesh position={[13.65,2.45,6.82]}><boxGeometry args={[10.2,4.9,.3]}/><meshStandardMaterial color="#2b2035"/></mesh>
+  <mesh position={[13.65,4.85,0]}><boxGeometry args={[10.2,.22,13.8]}/><meshStandardMaterial color="#100d18" metalness={.3}/></mesh>
+  {[-4,-2,0,2,4].map(z=><mesh key={z} position={[13.65,4.68,z]}><boxGeometry args={[9.9,.12,.1]}/><meshStandardMaterial color={gold} metalness={.8}/></mesh>)}
+  <pointLight position={[13.5,3.8,0]} color="#bd75ff" intensity={18} distance={12}/><pointLight position={[16.7,3.4,-3.7]} color="#ffd18a" intensity={9} distance={8}/><pointLight position={[11,3.2,3.7]} color="#8e62ff" intensity={8} distance={7}/>
+  <Text position={[13.6,3.72,-6.62]} fontSize={.48} color="#f2d7a0" anchorX="center" anchorY="middle" outlineWidth={.025} outlineColor="#26162d">VIP LOUNGE</Text>
+  <mesh position={[13.65,3.12,-6.58]}><boxGeometry args={[4.9,.035,.08]}/><meshStandardMaterial color={gold} emissive="#b47b39" emissiveIntensity={1.2}/></mesh>
+  <Sofa position={[11.6,0,-2.8]} color={velvet} width={2.65}/><Sofa position={[15.8,0,-2.8]} color={velvet} width={2.65}/><Sofa position={[11.6,0,2.7]} color="#263246" width={2.65}/><Sofa position={[15.8,0,2.7]} color="#263246" width={2.65}/>
+  <CocktailTable position={[13.65,0,-2.45]}/><CocktailTable position={[13.65,0,2.35]}/>
+  <mesh position={[17.25,.58,0]}><boxGeometry args={[1.4,1.16,3.2]}/><meshStandardMaterial color="#17131f" metalness={.65}/></mesh>
+  <mesh position={[17.25,1.18,0]}><boxGeometry args={[1.45,.08,3.25]}/><meshStandardMaterial color={gold} metalness={.85}/></mesh>
+  {[-5.4,5.4].map(z=><Plant key={z} position={[17.55,0,z]}/>)}
+  <mesh position={[10.5,.018,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[1.85,1.92,48]}/><meshBasicMaterial color="#d7b477"/></mesh>
+ </group>
 }
 
 function Venue({ position, remotes, avatar, high, roomType, view }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string; view:'first'|'third' }) {
@@ -264,18 +291,24 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
   <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.62} roughness={.24}/></mesh>
+  <VIPExtension/>
   {/* Glossy club floor: individual dark stone tiles with fine brass seams. */}
   <LuxuryClubArchitecture/>\n  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
   <mesh position={[0,4.15,-6.48]}><boxGeometry args={[5.5,.12,.1]}/><meshStandardMaterial color="#d45cff" emissive="#a72cff" emissiveIntensity={2.5}/></mesh>
   <PremiumDJBooth/>
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
-  <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
+  <mesh position={[8.7,2.5,-4.5]}><boxGeometry args={[.3,5,5]}/><meshStandardMaterial color="#1a1627"/></mesh>
+  <mesh position={[8.7,2.5,4.5]}><boxGeometry args={[.3,5,5]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
   {/* Invisible inner safety perimeter for the club camera enclosure. */}
   <group name="club-camera-collider">
    <mesh position={[-8.18,2.5,0]}><boxGeometry args={[.12,5,13.2]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
-   <mesh position={[8.18,2.5,0]}><boxGeometry args={[.12,5,13.2]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[8.18,2.5,-4.55]}><boxGeometry args={[.12,5,4.9]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[8.18,2.5,4.55]}><boxGeometry args={[.12,5,4.9]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[18.08,2.5,0]}><boxGeometry args={[.12,5,13.2]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[13.65,2.5,-6.58]}><boxGeometry args={[9.7,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[13.65,2.5,6.58]}><boxGeometry args={[9.7,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
    <mesh position={[0,2.5,-6.32]}><boxGeometry args={[16.3,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
    <mesh position={[0,2.5,6.52]}><boxGeometry args={[16.3,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
   </group>
@@ -303,7 +336,7 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
 
 export default function Room3DEngine({roomId,clubId,userId,displayName,initialConfig,vipRoomId,canManageClub}:{roomId:string;clubId:string;userId:string;displayName:string;initialConfig:Json|null;roomType:string;vipRoomId:string|null;canManageClub:boolean}) {
  const [avatar,setAvatar]=useState<Avatar>(()=>({...defaults,...(initialConfig && typeof initialConfig==='object' && !Array.isArray(initialConfig)?initialConfig:{})}) as Avatar)
- const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,7),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
+ const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,17),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
  const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
  const [blockedUsers,setBlockedUsers]=useState<string[]>([])
@@ -362,7 +395,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
  const move=useCallback((dx:number,dz:number)=>{
   setPosition(current=>{
-   const x=clamp(current.x+dx,-7,7)
+   const x=clamp(current.x+dx,-7,17)
    const z=clamp(current.z+dz,-5,5)
    const blockedStage=Math.abs(x)<2.5 && z < -3.7
    const blockedLeftLounge=Math.abs(x+5.2)<1.5 && z>-2.8 && z<-.8
@@ -385,7 +418,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
     const person=['sophia','daniel','priya','carlos'].includes(String(meta.person))?meta.person as Avatar['person']:'daniel'
     const hair=['curly','fade','braids','short'].includes(String(meta.hair))?meta.hair as Avatar['hair']:'curly'
     const outfit=['neon','street','vip','classic'].includes(String(meta.outfit))?meta.outfit as Avatar['outfit']:'neon'
-    list.push({id,name:typeof meta.name==='string'?meta.name:'Guest',position:{x:typeof meta.x==='number'?clamp(meta.x,-7,7):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{person,skin:skinTone,hair,outfit,dance}})
+    list.push({id,name:typeof meta.name==='string'?meta.name:'Guest',position:{x:typeof meta.x==='number'?clamp(meta.x,-7,17):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{person,skin:skinTone,hair,outfit,dance}})
    }
    setRemotes(list)
   }
@@ -492,7 +525,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
    {incomingChallenge&&<div className="mt-3 rounded-xl border border-rose-300/20 bg-black/30 p-3"><p className="text-sm text-white">Guest {incomingChallenge.slice(0,6)} challenges you to spar. Accept only if you want to fight.</p><div className="mt-2 flex gap-2"><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'sparring-accepted',payload:{to:incomingChallenge,from:userId}});setDuelWith(incomingChallenge);setCombatTarget(incomingChallenge);setIncomingChallenge(null);setCombatNotice('Sparring started by mutual agreement.')}} className="rounded-lg bg-rose-300 px-3 py-2 text-xs font-black text-black">Accept challenge</button><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'sparring-declined',payload:{to:incomingChallenge,from:userId}});setIncomingChallenge(null)}} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Decline</button></div></div>}
    <p className="mt-2 text-[11px] text-zinc-400" aria-live="polite">{combatNotice}</p><p className="mt-1 text-[10px] text-zinc-600">Stand inside the centre ring to challenge. Punching is disabled until the other player accepts. Either player can leave at any time.</p>
   </div>
-  <RoomCommunityHub roomId={roomId} clubId={clubId} userId={userId} displayName={displayName||'Guest'} guests={activeRemotes.map(g=>({id:g.id,name:g.name}))} onBlocked={id=>setBlockedUsers(current=>current.includes(id)?current:[...current,id])} canManageClub={canManageClub} vipRoomId={vipRoomId} onDanceChallenge={()=>dance('hype')} onOpenVip={()=>{if(vipRoomId)window.location.assign('/clubs/'+clubId+'/rooms/'+vipRoomId);else setPosition(p=>({...p,x:0,z:4.5,seated:false}))}}/>
+  <RoomCommunityHub roomId={roomId} clubId={clubId} userId={userId} displayName={displayName||'Guest'} guests={activeRemotes.map(g=>({id:g.id,name:g.name}))} onBlocked={id=>setBlockedUsers(current=>current.includes(id)?current:[...current,id])} canManageClub={canManageClub} vipRoomId={vipRoomId} onDanceChallenge={()=>dance('hype')} onOpenVip={()=>setPosition(p=>({...p,x:7.5,z:0,seated:false}))}/>
   <div className="mx-5 mb-4 rounded-2xl border border-white/10 bg-[#11101d] p-3"><p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Quick reactions</p><div className="mt-2 flex flex-wrap gap-2">{['👋','😂','🔥','❤️','🎉','🕺','👏','✨'].map(emoji=><button key={emoji} onClick={()=>sendEmote(emoji)} aria-label={'Send '+emoji+' reaction'} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-lg hover:border-lime-300/40">{emoji}</button>)}</div></div>
   <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-3"><button onClick={()=>{if(!bartenderOpen)speakBartender("Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?");setBartenderOpen(v=>!v)}} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-200">Talk to bartender</button><button onClick={()=>setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">{position.seated?'Stand up':'Sit / stand'}</button><button onClick={()=>void inviteFriends()} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Invite friends</button><button onClick={()=>setPairOpen(v=>!v)} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-200">Pair / couple</button><button onClick={()=>setEditingControls(v=>!v)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Customize controls</button></div>
   {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><button onClick={()=>speakBartender('Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?')} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-2 text-xs text-amber-100">Play bartender voice</button><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>{setDrinkChosen(true);speakBartender(`Coming right up. Enjoy your ${selectedDrink}!`)}} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
