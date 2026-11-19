@@ -313,6 +313,14 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  const [djMix,setDjMix]=useState<DJMix>(DEFAULT_DJ_MIX)
  const [djOwner,setDjOwner]=useState<string|null>(null)
  const [djName,setDjName]=useState<string|null>(null)
+ const [health,setHealth]=useState(100)
+ const [blocking,setBlocking]=useState(false)
+ const [combatTarget,setCombatTarget]=useState('')
+ const [combatNotice,setCombatNotice]=useState('Choose a nearby player to spar.')
+ const [hitFlash,setHitFlash]=useState(false)
+ const blockingRef=useRef(false)
+ const lastAttackAt=useRef(0)
+ useEffect(()=>{blockingRef.current=blocking},[blocking])
  const speakBartender=useCallback((message:string)=>{
   if(typeof window==='undefined'||!('speechSynthesis' in window))return
   window.speechSynthesis.cancel()
@@ -329,6 +337,10 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  const [status,setStatus]=useState('Connecting…')
  const channelRef=useRef<RealtimeChannel|null>(null)
  const lastSent=useRef(0)
+ const remotesRef=useRef<Remote[]>([])
+ const positionRef=useRef(position)
+ useEffect(()=>{remotesRef.current=remotes},[remotes])
+ useEffect(()=>{positionRef.current=position},[position])
  const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
   if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit,person:a.person})}
@@ -368,6 +380,21 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   channel.on('broadcast',{event:'dj-claim'},({payload})=>{if(typeof payload?.userId==='string'&&payload.userId!==userId){setDjOwner(payload.userId);setDjName(typeof payload.name==='string'?payload.name:'Guest DJ')}})
   channel.on('broadcast',{event:'dj-release'},({payload})=>{if(payload?.userId===djOwner){setDjOwner(null);setDjName(null)}})
   channel.on('broadcast',{event:'dj-mix'},({payload})=>{if(payload?.mix&&typeof payload.mix==='object'){setDjMix({...DEFAULT_DJ_MIX,...payload.mix} as DJMix);if(typeof payload.djOwner==='string')setDjOwner(payload.djOwner);if(typeof payload.djName==='string')setDjName(payload.djName)}})
+  channel.on('broadcast',{event:'combat-hit'},({payload})=>{
+   if(payload?.to!==userId||typeof payload.from!=='string')return
+   const attacker=remotesRef.current.find(g=>g.id===payload.from)
+   if(!attacker)return
+   const dx=attacker.position.x-positionRef.current.x, dz=attacker.position.z-positionRef.current.z
+   if(Math.hypot(dx,dz)>2.6)return
+   const damage=blockingRef.current?5:18
+   setHealth(current=>{
+    const next=Math.max(0,current-damage)
+    if(next===0){setCombatNotice('Knocked out — respawning in 3 seconds.');window.setTimeout(()=>{setHealth(100);setCombatNotice('Back in the game.')},3000)}
+    else setCombatNotice(blockingRef.current?'Block absorbed most of the hit!':'You were hit!')
+    return next
+   })
+   setHitFlash(true);window.setTimeout(()=>setHitFlash(false),180)
+  })
   channel.on('broadcast',{event:'pair-invite'},({payload})=>{if(payload?.to===userId&&typeof payload.from==='string')setIncomingPair(payload.from)})
   channel.on('broadcast',{event:'pair-accepted'},({payload})=>{if(payload?.to===userId&&typeof payload.from==='string')setPairedWith(payload.from)})
   channel.on('broadcast',{event:'pair-declined'},({payload})=>{if(payload?.to===userId)setStatus('Pair invitation declined')})
@@ -402,6 +429,17 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   setSaving(false);setStatus(error?'Avatar save failed':'Avatar saved')
  }
  function dance(d:Dance){setPosition(current=>({...current,dance:d}));setAvatar(a=>({...a,dance:d}))}
+ function attack(){
+  const now=Date.now()
+  if(now-lastAttackAt.current<650)return
+  const target=remotes.find(g=>g.id===combatTarget)
+  if(!target){setCombatNotice('Select another player first.');return}
+  const distance=Math.hypot(target.position.x-position.x,target.position.z-position.z)
+  if(distance>2.6){setCombatNotice('Move closer before punching.');return}
+  lastAttackAt.current=now
+  void channelRef.current?.send({type:'broadcast',event:'combat-hit',payload:{to:target.id,from:userId,damage:18,at:now}})
+  setCombatNotice('Punch thrown at '+target.id.slice(0,6)+'!')
+}
  return <section className="mt-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090a12]">
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
    <div><p className="text-[10px] font-black uppercase tracking-[.28em] text-lime-300">Immersive 3D club</p><h2 className="mt-1 text-xl font-black">The block party</h2><p className="mt-1 text-xs text-zinc-500">{status} · {remotes.length+1} avatars</p></div>
@@ -419,6 +457,12 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
     <button aria-label="Move backward" onPointerDown={e=>{e.preventDefault();move(0,.55);touchInterval.current=window.setInterval(()=>move(0,.32),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">↓</button>
     <button aria-label="Move right" onPointerDown={e=>{e.preventDefault();move(.55,0);touchInterval.current=window.setInterval(()=>move(.32,0),110)}} onPointerUp={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} onPointerLeave={()=>{if(touchInterval.current)clearInterval(touchInterval.current);touchInterval.current=null}} className="h-12 w-12 rounded-xl bg-lime-300 text-lg font-black text-black">→</button>
    </div>
+  </div>
+  <div className="mx-5 my-4 rounded-2xl border border-rose-400/25 bg-[#17101b] p-4">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-rose-300">Fight arena · sparring mode</p><p className="mt-1 text-xs text-zinc-400">Player-versus-player practice · non-graphic</p></div><span className="text-xs font-black text-white">HP {health}/100</span></div>
+   <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-rose-400 transition-all" style={{width:health+'%'}}/></div>
+   <div className="mt-3 flex flex-wrap items-center gap-2"><select aria-label="Choose sparring opponent" value={combatTarget} onChange={e=>setCombatTarget(e.target.value)} className="min-w-[180px] flex-1 rounded-lg border border-white/10 bg-[#171321] px-3 py-2 text-xs text-white"><option value="">Choose opponent…</option>{remotes.map(g=><option key={g.id} value={g.id}>Guest {g.id.slice(0,6)} · {Math.round(Math.hypot(g.position.x-position.x,g.position.z-position.z)*10)/10}m</option>)}</select><button onClick={attack} disabled={!combatTarget||health<=0} className="rounded-lg bg-rose-400 px-4 py-2 text-xs font-black text-black disabled:opacity-40">👊 Punch</button><button onClick={()=>setBlocking(v=>!v)} className={'rounded-lg border px-4 py-2 text-xs font-black '+(blocking?'border-cyan-300 bg-cyan-300/15 text-cyan-100':'border-white/15 text-zinc-200')}>{blocking?'Blocking…':'🛡 Block'}</button><button onClick={()=>{setHealth(100);setCombatNotice('Health restored for a fresh sparring round.')}} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Reset round</button></div>
+   <p className="mt-2 text-[11px] text-zinc-400" aria-live="polite">{combatNotice}</p><p className="mt-1 text-[10px] text-zinc-600">Move close, choose a connected guest, then punch. Blocking reduces incoming damage. Health restores after a knockout.</p>
   </div>
   <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-3"><button onClick={()=>{if(!bartenderOpen)speakBartender("Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?");setBartenderOpen(v=>!v)}} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-200">Talk to bartender</button><button onClick={()=>setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">{position.seated?'Stand up':'Sit / stand'}</button><button onClick={()=>setPairOpen(v=>!v)} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-200">Pair / couple</button><button onClick={()=>setEditingControls(v=>!v)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Customize controls</button></div>
   {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><button onClick={()=>speakBartender('Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?')} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-2 text-xs text-amber-100">Play bartender voice</button><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>{setDrinkChosen(true);speakBartender(`Coming right up. Enjoy your ${selectedDrink}!`)}} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
