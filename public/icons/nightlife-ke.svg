@@ -1,6 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
- <rect width="512" height="512" rx="112" fill="#08090d"/>
- <circle cx="256" cy="256" r="176" fill="#c7ff38" opacity=".12"/>
- <path d="M300 86v251c0 47-34 81-83 81-42 0-72-24-72-59 0-39 35-65 83-65 17 0 30 3 42 10V145l132-29v210c0 47-34 81-83 81-42 0-72-24-72-59 0-39 35-65 83-65 17 0 30 3 42 10V86z" fill="#c7ff38"/>
- <path d="M91 409h330" stroke="#c7ff38" stroke-width="10" stroke-linecap="round" opacity=".8"/>
+ <defs>
+  <linearGradient id="nk" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7f7ff"/><stop offset=".48" stop-color="#c9d6ff"/><stop offset="1" stop-color="#b600ff"/></linearGradient>
+  <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff25e6"/><stop offset=".52" stop-color="#8a35ff"/><stop offset="1" stop-color="#00c8ff"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff2a6"/><stop offset=".45" stop-color="#ffc52e"/><stop offset="1" stop-color="#b56b00"/></linearGradient>
+  <filter id="shadow"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect width="512" height="512" rx="112" fill="#070516"/>
+ <circle cx="256" cy="265" r="210" fill="#8c21ff" opacity=".18" filter="url(#shadow)"/>
+ <path d="M83 246c0-93 75-168 168-168h10c93 0 168 75 168 168" fill="none" stroke="url(#glow)" stroke-width="17" stroke-linecap="round"/>
+ <path d="M80 221c-20 0-35 17-35 38v69c0 21 15 38 35 38h28V221zm352 0c20 0 35 17 35 38v69c0 21-15 38-35 38h-28V221z" fill="#17152c" stroke="url(#glow)" stroke-width="10"/>
+ <path d="M142 154l-24-62 78 43 60-70 60 70 78-43-24 62c-54 30-174 30-228 0z" fill="url(#gold)" stroke="#ffe7a0" stroke-width="7" stroke-linejoin="round"/>
+ <circle cx="118" cy="92" r="12" fill="#ffd65a"/><circle cx="196" cy="135" r="12" fill="#ffd65a"/><circle cx="256" cy="65" r="13" fill="#ffd65a"/><circle cx="316" cy="135" r="12" fill="#ffd65a"/><circle cx="394" cy="92" r="12" fill="#ffd65a"/>
+ <text x="256" y="346" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="210" font-weight="900" letter-spacing="-18" fill="url(#nk)">N<tspan fill="#e000f5">K</tspan></text>
+ <path d="M106 387c91 34 209 34 300 0" fill="none" stroke="url(#glow)" stroke-width="13" stroke-linecap="round"/>
+ <path d="M256 255c-14 0-24 12-24 26 0 9 4 16 10 21l-17 49 17 9 14-35 13 35 17-9-18-49c7-5 11-13 11-22 0-14-10-25-23-25z" fill="#080516" opacity=".9"/>
 </svg>
