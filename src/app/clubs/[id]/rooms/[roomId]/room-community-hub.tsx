@@ -13,9 +13,10 @@ type Props = {
   guests: Guest[]
   onDanceChallenge: () => void
   onOpenVip: () => void
+  onBlocked: (id:string) => void
 }
 
-export default function RoomCommunityHub({ roomId, clubId, userId, displayName, guests, onDanceChallenge, onOpenVip }: Props) {
+export default function RoomCommunityHub({ roomId, clubId, userId, displayName, guests, onDanceChallenge, onOpenVip, onBlocked }: Props) {
   const [tab, setTab] = useState<'friends'|'events'|'safety'>('friends')
   const [friends, setFriends] = useState<string[]>([])
   const [requests, setRequests] = useState<string[]>([])
@@ -96,6 +97,7 @@ export default function RoomCommunityHub({ roomId, clubId, userId, displayName, 
     const {error}=await supabase.from('user_blocks').insert({blocker_id:userId,blocked_user_id:guest.id})
     if(error){setNotice(error.code==='23505'?'This account is already blocked.':'Could not block this account. Please try again.');return}
     setBlocked(current=>[...current,guest.id])
+    onBlocked(guest.id)
     setNotice(guest.name+' has been blocked on your account.')
   }
   const reportGuest=(guest:Guest)=>{
