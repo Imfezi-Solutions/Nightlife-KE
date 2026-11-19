@@ -8,6 +8,8 @@ export async function POST(request:Request,{params}:{params:Promise<{trackId:str
  const supabase=await createClient()
  const {data:{user}}=await supabase.auth.getUser()
  if(!user)return NextResponse.json({error:'Sign in required.'},{status:401})
+ const {data:assurance}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+ if(assurance?.currentLevel!=='aal2')return NextResponse.json({error:'Complete administrator two-factor authentication before this action.'},{status:403})
  const {data:assignment}=await supabase.from('platform_admins').select('role').eq('user_id',user.id).maybeSingle()
  if(!assignment||!['super_admin','platform_admin'].includes(assignment.role))return NextResponse.json({error:'Only platform administrators can review music rights.'},{status:403})
  const body=await request.json().catch(()=>null) as {status?:unknown}|null
