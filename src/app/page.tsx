@@ -21,7 +21,7 @@ export default function HomePage() {
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <div className="pointer-events-none absolute -top-40 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-lime-400/10 blur-[120px]" />
     <header className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-      <Link href="/" className="text-xl font-black tracking-tight">NIGHTLIFE<span className="text-lime-300"> KE</span></Link>
+      <Link href="/" aria-label="Nightlife KE home" className="flex items-center gap-3"><img src="/icons/nightlife-ke.svg" alt="" className="h-11 w-11 rounded-xl" /><span className="text-xl font-black tracking-tight">NIGHTLIFE<span className="text-fuchsia-400"> KE</span><span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.22em] text-zinc-500">by Imfezi Solutions</span></span></Link>
       <nav className="flex items-center gap-3"><Link href="/discover" className="hidden rounded-full px-4 py-2 text-sm text-zinc-300 hover:text-white sm:inline-flex">Explore clubs</Link><Link href="/login" className="rounded-full border border-white/15 px-5 py-2 text-sm hover:border-lime-300/70">Sign in</Link></nav>
     </header>
     <section className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_.95fr]">
