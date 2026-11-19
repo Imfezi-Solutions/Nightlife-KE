@@ -25,7 +25,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
-      options: { emailRedirectTo: 'https://nightlife-ke.vercel.app/auth/callback?next=/onboarding' },
+      options: { emailRedirectTo: 'https://nightlife.co.ke/auth/callback?next=/onboarding' },
     })
     if (error) setError(error.message)
     else setError('A fresh confirmation email has been sent. Use the newest email only.')
@@ -58,7 +58,7 @@ export default function LoginPage() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: 'https://nightlife-ke.vercel.app/auth/callback?next=/onboarding',
+          emailRedirectTo: 'https://nightlife.co.ke/auth/callback?next=/onboarding',
           data: { terms_accepted: true, terms_version: '2026-11-18-v1', terms_accepted_at: new Date().toISOString() },
         },
       })
