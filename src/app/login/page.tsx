@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [confirmationSent, setConfirmationSent] = useState(false)
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function resendConfirmation() {\n    setLoading(true)\n    setError('')\n    const supabase = createClient()\n    const { error } = await supabase.auth.resend({\n      type: 'signup',\n      email: email.trim(),\n      options: { emailRedirectTo: 'https://nightlife-ke.vercel.app/auth/callback?next=/onboarding' },\n    })\n    if (error) setError(error.message)\n    else setError('A fresh confirmation email has been sent. Use the newest email only.')\n    setLoading(false)\n  }\n\n  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     setError('')
@@ -44,7 +44,7 @@ export default function LoginPage() {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+          emailRedirectTo: 'https://nightlife-ke.vercel.app/auth/callback?next=/onboarding',
           data: { terms_accepted: true, terms_version: '2026-11-18-v1', terms_accepted_at: new Date().toISOString() },
         },
       })
@@ -75,7 +75,7 @@ export default function LoginPage() {
       <p className="mt-12 text-xs font-bold uppercase tracking-[.25em] text-lime-300">One more step</p>
       <h1 className="mt-3 text-3xl font-black">Check your email.</h1>
       <p className="mt-4 leading-7 text-zinc-300">We sent a confirmation link to <strong>{email}</strong>. Open it to verify your email and finish creating your account.</p>
-      <p className="mt-6 text-sm text-zinc-400">After confirming, you'll return to Nightlife KE to set up your profile.</p>
+      <p className="mt-6 text-sm text-zinc-400">After confirming, you'll return to Nightlife KE to set up your profile.</p>\n      <button onClick={resendConfirmation} disabled={loading} className="mt-4 w-full rounded-xl border border-lime-300/40 px-5 py-3 font-semibold text-lime-200 disabled:opacity-60">{loading ? 'Sending…' : 'Resend confirmation email'}</button>\n      {error && <p role="status" className="mt-4 text-sm text-zinc-300">{error}</p>}
       <button onClick={() => { setConfirmationSent(false); setMode('signin') }} className="mt-8 w-full rounded-xl bg-lime-300 px-5 py-4 font-bold text-black">Back to sign in</button>
     </> : <>
       <p className="mt-12 text-xs font-bold uppercase tracking-[.25em] text-lime-300">{mode === 'signin' ? 'The night starts here' : 'Join the scene'}</p>
