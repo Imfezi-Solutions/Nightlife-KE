@@ -322,8 +322,10 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  const [roomEmote,setRoomEmote]=useState<{emoji:string;from:string}|null>(null)
  const [hitFlash,setHitFlash]=useState(false)
  const blockingRef=useRef(false)
+ const duelWithRef=useRef<string|null>(null)
  const lastAttackAt=useRef(0)
  useEffect(()=>{blockingRef.current=blocking},[blocking])
+ useEffect(()=>{duelWithRef.current=duelWith},[duelWith])
  const speakBartender=useCallback((message:string)=>{
   if(typeof window==='undefined'||!('speechSynthesis' in window))return
   window.speechSynthesis.cancel()
@@ -389,7 +391,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   channel.on('broadcast',{event:'sparring-ended'},({payload})=>{if(payload?.to===userId){setDuelWith(null);setCombatNotice('Sparring ended. You are safe.')}})
   channel.on('broadcast',{event:'room-emote'},({payload})=>{if(payload?.from!==userId&&typeof payload?.emoji==='string'){setRoomEmote({emoji:payload.emoji,from:String(payload.name||'Guest')});window.setTimeout(()=>setRoomEmote(null),2200)}})
   channel.on('broadcast',{event:'combat-hit'},({payload})=>{
-   if(payload?.to!==userId||typeof payload.from!=='string'||duelWith!==payload.from)return
+   if(payload?.to!==userId||typeof payload.from!=='string'||duelWithRef.current!==payload.from)return
    const attacker=remotesRef.current.find(g=>g.id===payload.from)
    if(!attacker)return
    const dx=attacker.position.x-positionRef.current.x, dz=attacker.position.z-positionRef.current.z
@@ -415,7 +417,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   return ()=>{channelRef.current=null;void supabase.removeChannel(channel)}
   // Connect once per authenticated room identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps
- },[clubId,userId,duelWith])
+ },[clubId,userId])
  useEffect(()=>{try{sessionStorage.setItem('nightlife-controls:'+userId,JSON.stringify(controls))}catch{}},[controls,userId])
  useEffect(()=>{
   const onKey=(e:KeyboardEvent)=>{
