@@ -13,7 +13,7 @@ import RoomCommunityHub from './room-community-hub'
 type Dance = 'groove' | 'bounce' | 'sway' | 'hype'
 type Avatar = { person:'sophia'|'daniel'|'priya'|'carlos'; skin: 'warm'|'deep'|'light'|'tan'; hair: 'curly'|'fade'|'braids'|'short'; outfit: 'neon'|'street'|'vip'|'classic'; dance: Dance }
 type Position = { x:number; z:number; dance:Dance; seated?:boolean }
-type Remote = { id:string; name:string; position:Position; avatar:Avatar }
+type Remote = { id:string; name:string; position:Position; avatar:Avatar; vip:boolean }
 const defaults: Avatar = { person:'daniel', skin:'warm', hair:'curly', outfit:'neon', dance:'groove' }
 const choices = {
  dance:[['groove','Groove'],['bounce','Bounce'],['sway','Sway'],['hype','Hype']],
@@ -236,16 +236,16 @@ function FollowCamera({position,mode}:{position:Position;mode:'first'|'third'}) 
 }
 
 // Keep the freely orbiting third-person camera inside the club perimeter.
-function BoundedOrbitControls({position}:{position:Position}) {
+function BoundedOrbitControls({position,vipMember}:{position:Position;vipMember:boolean}) {
  const controls=useRef<any>(null)
  useFrame(({camera})=>{
   const orbit=controls.current
   if(!orbit)return
   const target=orbit.target
-  target.x=clamp(target.x,-7.65,17.1)
+  target.x=clamp(target.x,-7.65,vipMember?17.1:8.05)
   target.y=clamp(target.y,.65,3.9)
   target.z=clamp(target.z,-5.85,5.95)
-  camera.position.x=clamp(camera.position.x,-8.15,18.0)
+  camera.position.x=clamp(camera.position.x,-8.15,vipMember?18.0:8.45)
   camera.position.y=clamp(camera.position.y,.45,4.72)
   camera.position.z=clamp(camera.position.z,-6.28,6.48)
   orbit.update()
@@ -280,7 +280,9 @@ function VIPExtension() {
  </group>
 }
 
-function Venue({ position, remotes, avatar, high, roomType, view }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string; view:'first'|'third' }) {
+function VIPAccessGate() { return <group><mesh position={[8.72,2.25,0]}><boxGeometry args={[.22,4.45,4.12]}/><meshStandardMaterial color="#24172e" metalness={.55} roughness={.28}/></mesh><mesh position={[8.58,2.25,-1.02]}><boxGeometry args={[.06,3.75,.055]}/><meshStandardMaterial color="#d7b477" metalness={.85}/></mesh><mesh position={[8.58,2.25,1.02]}><boxGeometry args={[.06,3.75,.055]}/><meshStandardMaterial color="#d7b477" metalness={.85}/></mesh><Text position={[8.48,3.15,0]} rotation={[0,Math.PI/2,0]} fontSize={.25} color="#f2d7a0" anchorX="center" anchorY="middle">VIP MEMBERS ONLY</Text></group> }
+
+function Venue({ position, remotes, avatar, high, roomType, view, vipMember }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string; view:'first'|'third'; vipMember:boolean }) {
  return <>
   <color attach="background" args={['#080711']}/>
   <fog attach="fog" args={['#080711',14,28]}/>
@@ -291,7 +293,7 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <pointLight position={[5,3,1]} intensity={high?16:7} color="#c7ff38"/>
   <MovingClubLights/>
   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,0]} receiveShadow><planeGeometry args={[18,14]}/><meshStandardMaterial color="#171426" metalness={.62} roughness={.24}/></mesh>
-  <VIPExtension/>
+  {vipMember?<VIPExtension/>:<VIPAccessGate/>}
   {/* Glossy club floor: individual dark stone tiles with fine brass seams. */}
   <LuxuryClubArchitecture/>\n  <RoomFurnishings roomType={roomType}/>
   <mesh position={[0,2.6,-6.7]}><boxGeometry args={[18,5.2,.35]}/><meshStandardMaterial color="#171321"/></mesh>
@@ -330,9 +332,9 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}} wander/>)}
   <Dancer position={{x:12.1,z:-.2,dance:'sway'}} avatar={{...defaults,person:'priya',dance:'sway'}} wander/>
   <Dancer position={{x:15.4,z:.25,dance:'groove'}} avatar={{...defaults,person:'carlos',dance:'groove'}} wander/>
-  {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
+  {remotes.filter(m=>vipMember||!m.vip).map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   {view==='first' && <FollowCamera position={position} mode="first"/>}
-  {view==='third' && <BoundedOrbitControls position={position}/>}
+  {view==='third' && <BoundedOrbitControls position={position} vipMember={vipMember}/>}
  </>
 }
 
@@ -341,6 +343,9 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  const [position,setPosition]=useState<Position>(()=>{try{const saved=sessionStorage.getItem('nightlife-world:'+clubId);if(saved){const p=JSON.parse(saved);return {x:clamp(Number(p.x)||0,-7,17),z:clamp(Number(p.z)||2.2,-5,5),dance:defaults.dance}}}catch{}return {x:0,z:2.2,dance:defaults.dance}})
  const [introOpen,setIntroOpen]=useState(true)
  const [remotes,setRemotes]=useState<Remote[]>([])
+ const [vipMember,setVipMember]=useState(false)
+ const [vipCount,setVipCount]=useState(0)
+ const [vipNotice,setVipNotice]=useState('')
  const [blockedUsers,setBlockedUsers]=useState<string[]>([])
  const [quality,setQuality]=useState<'low'|'high'>('low')
  const [isMobile,setIsMobile]=useState(false)
@@ -391,20 +396,35 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
  useEffect(()=>{positionRef.current=position},[position])
  const publish=useCallback((p:Position,a:Avatar)=>{
   const now=Date.now()
-  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit,person:a.person,name:displayName||'Guest'})}
- },[displayName])
+  if(channelRef.current && now-lastSent.current>=80){lastSent.current=now;void channelRef.current.track({x:p.x,z:p.z,dance:p.dance,seated:!!p.seated,skin:a.skin,hair:a.hair,outfit:a.outfit,person:a.person,name:displayName||'Guest',vip:vipMember})}
+ },[displayName,vipMember])
  useEffect(()=>{publish(position,avatar)},[position,avatar,publish])
  useEffect(()=>{try{sessionStorage.setItem('nightlife-world:'+clubId,JSON.stringify({x:position.x,z:position.z}))}catch{}},[clubId,position.x,position.z])
+ const joinVip=useCallback(()=>{
+  const channel=channelRef.current
+  if(!channel){setVipNotice('Connecting to the club. Please try again in a moment.');return}
+  const state=channel.presenceState() as Record<string,Array<Record<string,unknown>>>
+  const occupied=new Set<string>()
+  for(const [id,metas] of Object.entries(state)){if(metas?.some(meta=>meta.vip===true))occupied.add(id)}
+  if(occupied.has(userId)){setVipMember(true);setVipNotice('You are already inside the VIP lounge.');return}
+  if(occupied.size>=5){setVipNotice('The VIP lounge is full (5/5). Please try again when someone leaves.');return}
+  setVipMember(true);setVipNotice('Welcome to the VIP lounge.')
+  setPosition(p=>({...p,x:9.6,z:0,seated:false}))
+ },[userId])
+ const leaveVip=useCallback(()=>{
+  setVipMember(false);setVipNotice('You left the VIP lounge. Your space is now open.')
+  setPosition(p=>({...p,x:7.5,z:0,seated:false}))
+ },[])
  const move=useCallback((dx:number,dz:number)=>{
   setPosition(current=>{
-   const x=clamp(current.x+dx,-7,17)
+   const x=clamp(current.x+dx,-7,vipMember?17:8.05)
    const z=clamp(current.z+dz,-5,5)
    const blockedStage=Math.abs(x)<2.5 && z < -3.7
    const blockedLeftLounge=Math.abs(x+5.2)<1.5 && z>-2.8 && z<-.8
    const blockedRightLounge=Math.abs(x-5.2)<1.5 && z>-2.8 && z<-.8
    return blockedStage||blockedLeftLounge||blockedRightLounge?current:{x,z,dance:current.dance,seated:false}
   })
- },[])
+ },[vipMember])
  useEffect(()=>{
   const supabase=createClient()
   const channel=supabase.channel('club-world:'+clubId,{config:{private:true,presence:{key:userId}}})
@@ -420,9 +440,12 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
     const person=['sophia','daniel','priya','carlos'].includes(String(meta.person))?meta.person as Avatar['person']:'daniel'
     const hair=['curly','fade','braids','short'].includes(String(meta.hair))?meta.hair as Avatar['hair']:'curly'
     const outfit=['neon','street','vip','classic'].includes(String(meta.outfit))?meta.outfit as Avatar['outfit']:'neon'
-    list.push({id,name:typeof meta.name==='string'?meta.name:'Guest',position:{x:typeof meta.x==='number'?clamp(meta.x,-7,17):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{person,skin:skinTone,hair,outfit,dance}})
+    list.push({id,name:typeof meta.name==='string'?meta.name:'Guest',position:{x:typeof meta.x==='number'?clamp(meta.x,-7,17):0,z:typeof meta.z==='number'?clamp(meta.z,-5,5):0,dance,seated:meta.seated===true},avatar:{person,skin:skinTone,hair,outfit,dance},vip:meta.vip===true})
    }
    setRemotes(list)
+   const vipIds=new Set<string>()
+   for(const [id,metas] of Object.entries(state)){if(metas?.some(meta=>meta.vip===true))vipIds.add(id)}
+   setVipCount(vipIds.size)
   }
   channel.on('presence',{event:'sync'},sync)
   channel.on('broadcast',{event:'dj-claim'},({payload})=>{if(typeof payload?.userId==='string'&&payload.userId!==userId){setDjOwner(payload.userId);setDjName(typeof payload.name==='string'?payload.name:'Guest DJ')}})
@@ -453,7 +476,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   channel.on('broadcast',{event:'pair-declined'},({payload})=>{if(payload?.to===userId)setStatus('Pair invitation declined')})
   channel.on('broadcast',{event:'pair-ended'},({payload})=>{if(payload?.to===userId)setPairedWith(null)})
   channel.subscribe(state=>{
-   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit,person:avatar.person,name:displayName||'Guest'})}
+   if(state==='SUBSCRIBED'){setStatus('Multiplayer connected');void channel.track({x:position.x,z:position.z,dance:position.dance,skin:avatar.skin,hair:avatar.hair,outfit:avatar.outfit,person:avatar.person,name:displayName||'Guest',vip:vipMember})}
    else if(state==='CHANNEL_ERROR'||state==='TIMED_OUT')setStatus('Reconnecting…')
    else if(state==='CLOSED')setStatus('Disconnected')
   })
@@ -505,7 +528,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   </header>
   <div className="relative h-[min(68svh,520px)] min-h-[360px] touch-none sm:h-[540px]">
    <Canvas shadows={false} dpr={isMobile?0.85:quality==='high'?[1,1.25]:1} camera={{position:[0,3.15,7.8],fov:view==='first'?78:58}} gl={{antialias:quality==='high',powerPreference:'high-performance'}}>
-    <Venue position={position} remotes={activeRemotes} avatar={avatar} high={quality==='high'} roomType="club" view={view}/>
+    <Venue position={position} remotes={activeRemotes} avatar={avatar} high={quality==='high'} roomType="club" view={view} vipMember={vipMember}/>
    </Canvas>
    {hitFlash&&<div className="pointer-events-none absolute inset-0 z-10 bg-rose-500/20"/>}
    {roomEmote&&<div className="pointer-events-none absolute left-1/2 top-5 z-20 -translate-x-1/2 rounded-full border border-white/15 bg-black/75 px-4 py-2 text-sm text-white shadow-xl">{roomEmote.emoji} {roomEmote.from}</div>}
@@ -527,7 +550,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
    {incomingChallenge&&<div className="mt-3 rounded-xl border border-rose-300/20 bg-black/30 p-3"><p className="text-sm text-white">Guest {incomingChallenge.slice(0,6)} challenges you to spar. Accept only if you want to fight.</p><div className="mt-2 flex gap-2"><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'sparring-accepted',payload:{to:incomingChallenge,from:userId}});setDuelWith(incomingChallenge);setCombatTarget(incomingChallenge);setIncomingChallenge(null);setCombatNotice('Sparring started by mutual agreement.')}} className="rounded-lg bg-rose-300 px-3 py-2 text-xs font-black text-black">Accept challenge</button><button onClick={()=>{void channelRef.current?.send({type:'broadcast',event:'sparring-declined',payload:{to:incomingChallenge,from:userId}});setIncomingChallenge(null)}} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Decline</button></div></div>}
    <p className="mt-2 text-[11px] text-zinc-400" aria-live="polite">{combatNotice}</p><p className="mt-1 text-[10px] text-zinc-600">Stand inside the centre ring to challenge. Punching is disabled until the other player accepts. Either player can leave at any time.</p>
   </div>
-  <RoomCommunityHub roomId={roomId} clubId={clubId} userId={userId} displayName={displayName||'Guest'} guests={activeRemotes.map(g=>({id:g.id,name:g.name}))} onBlocked={id=>setBlockedUsers(current=>current.includes(id)?current:[...current,id])} canManageClub={canManageClub} onDanceChallenge={()=>dance('hype')} onOpenVip={()=>setPosition(p=>({...p,x:7.5,z:0,seated:false}))}/>
+  <RoomCommunityHub roomId={roomId} clubId={clubId} userId={userId} displayName={displayName||'Guest'} guests={activeRemotes.map(g=>({id:g.id,name:g.name}))} onBlocked={id=>setBlockedUsers(current=>current.includes(id)?current:[...current,id])} canManageClub={canManageClub} onDanceChallenge={()=>dance('hype')} onOpenVip={joinVip} onLeaveVip={leaveVip} vipMember={vipMember} vipCount={vipCount} vipNotice={vipNotice}/>
   <div className="mx-5 mb-4 rounded-2xl border border-white/10 bg-[#11101d] p-3"><p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Quick reactions</p><div className="mt-2 flex flex-wrap gap-2">{['👋','😂','🔥','❤️','🎉','🕺','👏','✨'].map(emoji=><button key={emoji} onClick={()=>sendEmote(emoji)} aria-label={'Send '+emoji+' reaction'} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-lg hover:border-lime-300/40">{emoji}</button>)}</div></div>
   <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-3"><button onClick={()=>{if(!bartenderOpen)speakBartender("Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?");setBartenderOpen(v=>!v)}} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-200">Talk to bartender</button><button onClick={()=>setPosition(p=>p.seated?{...p,seated:false}:{...p,x:6.8,z:-1.7,seated:true})} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">{position.seated?'Stand up':'Sit / stand'}</button><button onClick={()=>void inviteFriends()} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Invite friends</button><button onClick={()=>setPairOpen(v=>!v)} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-200">Pair / couple</button><button onClick={()=>setEditingControls(v=>!v)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white">Customize controls</button></div>
   {bartenderOpen&&<div className="mx-5 mb-4 rounded-2xl border border-amber-300/20 bg-[#171321] p-4"><p className="text-xs font-black uppercase tracking-widest text-amber-200">Bartender · Welcome</p><p className="mt-2 text-sm text-white">Hey there! Would you like something to drink, or are you just looking around?</p><button onClick={()=>speakBartender('Hey there! Welcome to the club. Would you like something to drink, or are you just looking around?')} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-2 text-xs text-amber-100">Play bartender voice</button><div className="mt-3 flex flex-wrap gap-2">{['Tropical mocktail','Virtual cocktail','Soda','Water'].map(drink=><button key={drink} onClick={()=>{setSelectedDrink(drink);setDrinkChosen(false)}} className={`rounded-lg border px-3 py-2 text-xs ${selectedDrink===drink?'border-amber-300 bg-amber-300/15 text-amber-100':'border-white/10 text-zinc-300'}`}>{drink}</button>)}<button onClick={()=>{setDrinkChosen(true);speakBartender(`Coming right up. Enjoy your ${selectedDrink}!`)}} className="rounded-lg bg-amber-300 px-4 py-2 text-xs font-black text-black">That sounds good</button><button onClick={()=>setBartenderOpen(false)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Maybe later</button></div>{drinkChosen&&<p className="mt-3 text-xs text-emerald-300">You selected {selectedDrink}. This is a virtual in-room interaction; no wallet charge has been made.</p>}</div>}
@@ -535,7 +558,7 @@ export default function Room3DEngine({roomId,clubId,userId,displayName,initialCo
   {editingControls&&<div className="mx-5 mb-4 rounded-2xl border border-white/10 bg-[#11101d] p-4"><p className="text-xs font-black uppercase tracking-widest text-lime-200">Choose your keys</p><p className="mt-1 text-xs text-zinc-400">Select an action, then press the key you want to assign. Arrow keys also remain available for movement.</p><div className="mt-3 flex flex-wrap gap-2">{Object.entries({forward:'Move forward',backward:'Move backward',left:'Move left',right:'Move right',sit:'Sit / stand',interact:'Talk to bartender'}).map(([action,label])=><button key={action} onClick={()=>setListeningFor(action)} className={`rounded-lg border px-3 py-2 text-xs ${listeningFor===action?'border-lime-300 bg-lime-300/10 text-lime-100':'border-white/10 text-zinc-200'}`}>{listeningFor===action?'Press a key…':`${label}: ${controls[action]}`}</button>)}</div><button onClick={()=>{setControls({forward:'w',backward:'s',left:'a',right:'d',sit:'c',interact:'e'});setListeningFor(null)}} className="mt-3 text-xs text-zinc-400 underline">Reset controls</button></div>}
   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
    <div><p className="font-bold">{displayName||'Your avatar'}</p><p className="text-xs text-zinc-500">Fixed club environment · {activeRemotes.length+1} people connected · {position.seated?'Seated':'Standing'}</p></div>
-   <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'VIP lounge',x:12.8,z:0},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
+   <div className="flex flex-wrap gap-2"><span className="self-center text-[10px] uppercase tracking-wider text-zinc-500">Move to</span>{[{label:'Dancefloor',x:0,z:2.2},{label:'Bar',x:-5,z:-1},{label:'Lounge',x:5,z:1},{label:'DJ stage',x:0,z:-4}].map(zone=><button key={zone.label} onClick={()=>setPosition(p=>({...p,x:zone.x,z:zone.z}))} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200">{zone.label}</button>)}<button onClick={()=>vipMember?leaveVip():joinVip()} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs text-amber-100">{vipMember?'Leave VIP':'Join VIP'}</button>{(['groove','bounce','sway','hype'] as Dance[]).map(d=><button key={d} onClick={()=>dance(d)} className="rounded-lg border border-white/10 px-3 py-2 text-xs capitalize text-zinc-200">{d}</button>)}<button onClick={()=>setEditing(v=>!v)} className="rounded-lg border border-lime-300/30 px-3 py-2 text-xs font-bold text-lime-200">Customize</button></div>
   </footer>
   <DJMixer roomId={roomId} userId={userId} mix={djMix} isDJ={djOwner===userId} djName={djName} onClaim={()=>{setDjOwner(userId);setDjName(displayName||'Guest DJ');void channelRef.current?.send({type:'broadcast',event:'dj-claim',payload:{userId,name:displayName||'Guest DJ'}})}} onMixChange={next=>{setDjMix(next);void channelRef.current?.send({type:'broadcast',event:'dj-mix',payload:{mix:next,djOwner:userId,djName:displayName||'Guest DJ'}})}}/>
   <BartenderStation roomId={roomId} userId={userId} displayName={displayName||'Guest'}/>
