@@ -268,6 +268,19 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
   }
 
   const loadQueueTrack = (track:QueueTrack, deck:'A'|'B') => onMixChange({...mix,playing:false,playbackStartedAt:null,...(deck==='A'?{deckAPath:track.provider_asset_id,deckAName:track.title}:{deckBPath:track.provider_asset_id,deckBName:track.title})})
+  const [deletingTrack,setDeletingTrack] = useState<string|null>(null)
+  const [deleteError,setDeleteError] = useState('')
+  const deleteTrack = async (track:QueueTrack) => {
+    if (deletingTrack) return
+    if (!window.confirm('Remove this song from the club queue?')) return
+    setDeletingTrack(track.id); setDeleteError('')
+    const supabase=createClient()
+    const {error:removeError}=await supabase.from('dj_queue').delete().eq('id',track.id).eq('room_id',roomId)
+    if(removeError){setDeleteError(removeError.message);setDeletingTrack(null);return}
+    const stillLoaded = mix.deckAPath===track.provider_asset_id || mix.deckBPath===track.provider_asset_id
+    if(!stillLoaded && track.provider_asset_id.startsWith(roomId+'/')) await supabase.storage.from('room-audio').remove([track.provider_asset_id])
+    setDeletingTrack(null)
+  }
   const cue = (deck:'A'|'B') => { const el=deck==='A'?rig.current?.elementA:rig.current?.elementB; if(el) el.currentTime=0 }
   const fmt = (n:number) => Number.isFinite(n)&&n>=0 ? Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0') : '0:00'
   const bars = Array.from({length:56},(_,i)=>12+Math.abs(Math.sin(i*1.73)*Math.cos(i*.31))*78)
@@ -313,10 +326,10 @@ export default function DJMixer({ roomId, userId, mix, isDJ, djName, onClaim, on
         <div className="mt-4 rounded-xl bg-black/30 p-3"><div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[.2em] text-zinc-500"><span>Crossfader</span><span className="text-zinc-300">{mix.crossfader<-.15?'Deck A':mix.crossfader>.15?'Deck B':'Centre blend'}</span></div><div className="flex items-center gap-3"><span className="text-xs font-black text-cyan-300">A</span><input aria-label="Crossfader" type="range" min="-1" max="1" step=".01" value={mix.crossfader} onChange={e=>change('crossfader',Number(e.target.value))} className="w-full accent-fuchsia-300"/><span className="text-xs font-black text-fuchsia-300">B</span></div></div>
       </section>
       <section className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-[#11121c]"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-zinc-300">Music library · room queue</p><p className="mt-1 text-[10px] text-zinc-600">Choose a queued song and load it as your next transition</p></div><span className="rounded-full bg-fuchsia-300/10 px-3 py-1 text-[10px] font-bold text-fuchsia-200">{queue.length} TRACKS</span></div>
-        {queue.length===0?<div className="px-4 py-8 text-center"><p className="text-sm font-bold text-zinc-300">Your room playlist is empty</p><p className="mt-1 text-xs text-zinc-600">Upload a track on either deck. It will appear here for the next mix.</p></div>:<div className="max-h-64 overflow-y-auto">{queue.map((track,index)=><div key={track.id} className="flex flex-wrap items-center gap-3 border-b border-white/5 px-3 py-3 last:border-0 hover:bg-white/[.025] sm:px-4"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/5 text-[10px] font-black text-zinc-500">{String(index+1).padStart(2,'0')}</span><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-white">{track.title}</p><p className="mt-1 text-[10px] text-zinc-600">{track.artist||'Room upload'} · {fmt(track.duration_ms/1000)}</p></div><button onClick={()=>loadQueueTrack(track,'A')} className="rounded-lg border border-cyan-300/20 px-3 py-2 text-[9px] font-black uppercase text-cyan-200 hover:bg-cyan-300/10">Load A</button><button onClick={()=>loadQueueTrack(track,'B')} className="rounded-lg border border-fuchsia-300/20 px-3 py-2 text-[9px] font-black uppercase text-fuchsia-200 hover:bg-fuchsia-300/10">Load B</button></div>)}</div>}
+        {queue.length===0?<div className="px-4 py-8 text-center"><p className="text-sm font-bold text-zinc-300">Your room playlist is empty</p><p className="mt-1 text-xs text-zinc-600">Upload a track on either deck. It will appear here for the next mix.</p></div>:<div className="max-h-64 overflow-y-auto">{queue.map((track,index)=><div key={track.id} className="flex flex-wrap items-center gap-3 border-b border-white/5 px-3 py-3 last:border-0 hover:bg-white/[.025] sm:px-4"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/5 text-[10px] font-black text-zinc-500">{String(index+1).padStart(2,'0')}</span><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-white">{track.title}</p><p className="mt-1 text-[10px] text-zinc-600">{track.artist||'Room upload'} · {fmt(track.duration_ms/1000)}</p></div><button onClick={()=>loadQueueTrack(track,'A')} className="rounded-lg border border-cyan-300/20 px-3 py-2 text-[9px] font-black uppercase text-cyan-200 hover:bg-cyan-300/10">Load A</button><button onClick={()=>loadQueueTrack(track,'B')} className="rounded-lg border border-fuchsia-300/20 px-3 py-2 text-[9px] font-black uppercase text-fuchsia-200 hover:bg-fuchsia-300/10">Load B</button><button onClick={()=>void deleteTrack(track)} disabled={!!deletingTrack} className="rounded-lg border border-rose-400/25 px-3 py-2 text-[9px] font-black uppercase text-rose-300 disabled:opacity-40">{deletingTrack===track.id?'Removing…':'Delete'}</button></div>)}</div>}
       </section>
       <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-zinc-600"><span>Each guest enables room audio once. Upload only music you have rights to stream.</span><button onClick={()=>onMixChange({...mix,...DEFAULT_DJ_MIX,deckAPath:mix.deckAPath,deckBPath:mix.deckBPath,deckAName:mix.deckAName,deckBName:mix.deckBName})} className="rounded-lg border border-white/10 px-3 py-2 text-zinc-400">Reset mixer</button></footer>
-      {error&&<p role="alert" className="mt-3 rounded-lg border border-rose-400/20 bg-rose-400/5 p-3 text-xs text-rose-300">{error}</p>}
+      {(error||deleteError)&&<p role="alert" className="mt-3 rounded-lg border border-rose-400/20 bg-rose-400/5 p-3 text-xs text-rose-300">{error||deleteError}</p>}
     </div></div>}
   </div>
 }
