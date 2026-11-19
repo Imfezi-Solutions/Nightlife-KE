@@ -1,4 +1,12 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Meet People & Explore Virtual Clubs Across Kenya',
+  description: 'Discover Nightlife KE: meet new people, find communities, join immersive 3D virtual clubs, enjoy DJ sets and attend social events across Kenya. Adults 18+ only.',
+  alternates: { canonical: '/' },
+  openGraph: { title: 'Meet People & Explore Virtual Clubs Across Kenya', description: 'Find your people, discover communities and experience immersive virtual nightlife across Kenya. 18+ only.', url: 'https://nightlife.co.ke/', type: 'website' },
+}
 
 const pillars = [
   { number: '01', title: 'Find your people', body: 'Discover people, communities and public clubs across all 47 counties — not just your hometown.' },
@@ -7,7 +15,10 @@ const pillars = [
 ]
 
 export default function HomePage() {
+
+  const structuredData = { '@context': 'https://schema.org', '@graph': [ { '@type': 'Organization', name: 'Nightlife KE', url: 'https://nightlife.co.ke/', description: 'A Kenyan social and virtual nightlife platform operated by Imfezi Solutions.', parentOrganization: { '@type': 'Organization', name: 'Imfezi Solutions' } }, { '@type': 'WebSite', name: 'Nightlife KE', url: 'https://nightlife.co.ke/', inLanguage: 'en-KE', description: 'Meet people, discover communities and experience virtual clubs across Kenya.' }, { '@type': 'WebPage', name: 'Nightlife KE — Meet People & Explore Virtual Clubs Across Kenya', url: 'https://nightlife.co.ke/', isPartOf: { '@type': 'WebSite', url: 'https://nightlife.co.ke/' }, about: { '@type': 'Thing', name: 'Kenyan social networking and virtual nightlife' } } ] }
   return <main className="relative min-h-screen overflow-hidden noise">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
     <div className="pointer-events-none absolute -top-40 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-lime-400/10 blur-[120px]" />
     <header className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
       <Link href="/" className="text-xl font-black tracking-tight">NIGHTLIFE<span className="text-lime-300"> KE</span></Link>
