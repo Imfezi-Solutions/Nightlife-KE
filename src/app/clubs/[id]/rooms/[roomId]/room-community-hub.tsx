@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Guest = { id: string; name: string }
@@ -29,10 +29,11 @@ export default function RoomCommunityHub({ roomId, clubId, userId, displayName, 
   const [blocked, setBlocked] = useState<string[]>([])
   const [notice, setNotice] = useState('')
   const supabase = useMemo(() => createClient(), [])
+  const channelRef = useRef<ReturnType<typeof supabase.channel>|null>(null)
 
   const send = useCallback((event:string, payload:Record<string,unknown>) => {
-    void supabase.channel('room-social:'+roomId).send({type:'broadcast',event,payload})
-  }, [roomId, supabase])
+    if(channelRef.current) void channelRef.current.send({type:'broadcast',event,payload})
+  }, [])
 
   useEffect(() => {
     const channel = supabase.channel('room-social:'+roomId)
@@ -55,7 +56,8 @@ export default function RoomCommunityHub({ roomId, clubId, userId, displayName, 
         if(payload?.to===userId) setNotice(String(payload.name||'A guest')+' invited you to a group dance challenge.')
       })
       .subscribe()
-    return ()=>{void supabase.removeChannel(channel)}
+    channelRef.current=channel
+    return ()=>{channelRef.current=null;void supabase.removeChannel(channel)}
   }, [roomId,userId,supabase])
 
   useEffect(()=>{
