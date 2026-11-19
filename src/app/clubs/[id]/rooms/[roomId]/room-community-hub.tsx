@@ -13,11 +13,15 @@ type Props = {
   guests: Guest[]
   onDanceChallenge: () => void
   onOpenVip: () => void
+  onLeaveVip: () => void
+  vipMember: boolean
+  vipCount: number
+  vipNotice: string
   onBlocked: (id:string) => void
   canManageClub: boolean
 }
 
-export default function RoomCommunityHub({ roomId, clubId, userId, displayName, guests, onDanceChallenge, onOpenVip, onBlocked, canManageClub }: Props) {
+export default function RoomCommunityHub({ roomId, clubId, userId, displayName, guests, onDanceChallenge, onOpenVip, onLeaveVip, vipMember, vipCount, vipNotice, onBlocked, canManageClub }: Props) {
   const [tab, setTab] = useState<'friends'|'events'|'safety'>('friends')
   const [friends, setFriends] = useState<string[]>([])
   const [requests, setRequests] = useState<string[]>([])
@@ -138,6 +142,6 @@ export default function RoomCommunityHub({ roomId, clubId, userId, displayName, 
       <div className="lg:col-span-2 flex flex-wrap gap-2 rounded-xl border border-fuchsia-300/15 bg-fuchsia-300/5 p-3"><div className="flex-1"><p className="text-xs font-bold text-fuchsia-100">Group dance challenge</p><p className="mt-1 text-[10px] text-zinc-400">Invite the room to join a synchronised dance moment.</p></div><button onClick={()=>{send('dance-challenge',{from:userId,name:displayName});onDanceChallenge();setNotice('Dance challenge started. Guests in this room have been invited.')}} className="rounded-lg bg-fuchsia-300 px-3 py-2 text-xs font-black text-black">Start challenge</button>{incomingDanceChallenge&&<button onClick={()=>{setIncomingDanceChallenge(null);onDanceChallenge();setNotice('You joined '+incomingDanceChallenge+'’s dance challenge.')}} className="rounded-lg border border-fuchsia-300/30 px-3 py-2 text-xs font-bold text-fuchsia-100">Join {incomingDanceChallenge}</button>}</div>
     </div>}
     {tab==='safety'&&<div className="mt-4 space-y-3"><div className="rounded-xl border border-amber-300/15 bg-amber-300/5 p-3"><p className="text-xs font-bold text-amber-100">Your safety controls</p><p className="mt-1 text-[10px] leading-5 text-zinc-400">Blocking is saved to your account. Reports open an email to the Nightlife KE team with the account and room details ready for review.</p></div>{guests.filter(g=>g.id!==userId).map(guest=><div key={guest.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 px-3 py-2"><span className="text-xs text-zinc-200">{guest.name}</span><div className="flex gap-2"><button disabled={blocked.includes(guest.id)} onClick={()=>void blockGuest(guest)} className="rounded-md border border-amber-300/30 px-2 py-1.5 text-[10px] text-amber-100 disabled:opacity-40">{blocked.includes(guest.id)?'Blocked':'Block'}</button><button onClick={()=>reportGuest(guest)} className="rounded-md border border-rose-300/30 px-2 py-1.5 text-[10px] text-rose-100">Report</button></div></div>)}{guests.length<=1&&<p className="text-xs text-zinc-500">Other guests will appear here when they join.</p>}</div>}
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3"><button onClick={onOpenVip} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-100">Walk to VIP entrance</button><p className="text-[10px] text-zinc-500">The VIP lounge is part of this shared club. Walk through the gold archway.</p></div>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3"><div><p className="text-xs font-bold text-amber-100">VIP lounge · {vipCount}/5 inside</p><p className="mt-1 text-[10px] text-zinc-500">{vipMember?'You are inside the private VIP extension. Leaving frees your place immediately.':'Private extension — join to pass the gold security gate and see inside.'}</p>{vipNotice&&<p role="status" className="mt-1 text-[10px] text-amber-200">{vipNotice}</p>}</div>{vipMember?<button onClick={onLeaveVip} className="rounded-lg border border-rose-300/30 px-3 py-2 text-xs font-bold text-rose-100">Leave VIP lounge</button>:<button onClick={onOpenVip} disabled={vipCount>=5} className="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold text-amber-100 disabled:cursor-not-allowed disabled:opacity-40">{vipCount>=5?'VIP is full':'Join VIP lounge'}</button>}</div>
   </section>
 }
