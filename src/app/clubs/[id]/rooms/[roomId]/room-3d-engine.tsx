@@ -231,6 +231,24 @@ function FollowCamera({position,mode}:{position:Position;mode:'first'|'third'}) 
  return null
 }
 
+// Keep the freely orbiting third-person camera inside the club perimeter.
+function BoundedOrbitControls({position}:{position:Position}) {
+ const controls=useRef<any>(null)
+ useFrame(({camera})=>{
+  const orbit=controls.current
+  if(!orbit)return
+  const target=orbit.target
+  target.x=clamp(target.x,-7.65,7.65)
+  target.y=clamp(target.y,.65,3.9)
+  target.z=clamp(target.z,-5.85,5.95)
+  camera.position.x=clamp(camera.position.x,-8.15,8.15)
+  camera.position.y=clamp(camera.position.y,.45,4.72)
+  camera.position.z=clamp(camera.position.z,-6.28,6.48)
+  orbit.update()
+ })
+ return <OrbitControls ref={controls} makeDefault enabled enableRotate enablePan enableZoom target={[position.x,1,position.z]} minDistance={3.2} maxDistance={13.5} minPolarAngle={0.18} maxPolarAngle={Math.PI/2.02} enableDamping dampingFactor={.09} rotateSpeed={.72}/>
+}
+
 function Venue({ position, remotes, avatar, high, roomType, view }: { position:Position; remotes:Remote[]; avatar:Avatar; high:boolean; roomType:string; view:'first'|'third' }) {
  return <>
   <color attach="background" args={['#080711']}/>
@@ -250,6 +268,13 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   <mesh position={[-8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[8.7,2.5,0]}><boxGeometry args={[.3,5,14]}/><meshStandardMaterial color="#1a1627"/></mesh>
   <mesh position={[0,2.5,7.05]}><boxGeometry args={[18,5,.3]}/><meshStandardMaterial color="#171321"/></mesh>
+  {/* Invisible inner safety perimeter for the club camera enclosure. */}
+  <group name="club-camera-collider">
+   <mesh position={[-8.18,2.5,0]}><boxGeometry args={[.12,5,13.2]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[8.18,2.5,0]}><boxGeometry args={[.12,5,13.2]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[0,2.5,-6.32]}><boxGeometry args={[16.3,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+   <mesh position={[0,2.5,6.52]}><boxGeometry args={[16.3,5,.12]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+  </group>
 
 
 
@@ -268,7 +293,7 @@ function Venue({ position, remotes, avatar, high, roomType, view }: { position:P
   ].map((guest,i)=><Dancer key={'club-guest-'+i} position={{x:guest.x,z:guest.z,dance:guest.dance}} avatar={{...defaults,person:guest.person,dance:guest.dance}} wander/>)}
   {remotes.map(m=><Dancer key={m.id} position={m.position} avatar={m.avatar}/>)}
   {view==='first' && <FollowCamera position={position} mode="first"/>}
-  {view==='third' && <OrbitControls makeDefault enabled enableRotate enablePan enableZoom target={[position.x,1,position.z]} minDistance={3.2} maxDistance={17} minPolarAngle={0.18} maxPolarAngle={Math.PI/2.02} enableDamping dampingFactor={.09} rotateSpeed={.72} />}
+  {view==='third' && <BoundedOrbitControls position={position}/>}
  </>
 }
 
