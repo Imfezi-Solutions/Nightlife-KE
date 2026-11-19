@@ -84,7 +84,7 @@ export default function LoginPage() {
   }
 
   return <main className="noise flex min-h-screen items-center justify-center px-5 py-12"><div className="glass w-full max-w-md rounded-[2rem] p-8 sm:p-10">
-    <Link href="/" className="text-sm font-bold tracking-wider">← NIGHTLIFE<span className="text-lime-300"> KE</span></Link>
+    <Link href="/" aria-label="Nightlife KE home" className="inline-flex items-center gap-3"><img src="/icons/nightlife-ke.svg" alt="" className="h-12 w-12 rounded-xl" /><span className="text-sm font-black tracking-wider">NIGHTLIFE<span className="text-fuchsia-400"> KE</span><span className="mt-1 block text-[9px] font-semibold uppercase tracking-[.2em] text-zinc-500">by Imfezi Solutions</span></span></Link>
     {confirmationSent ? <>
       <p className="mt-12 text-xs font-bold uppercase tracking-[.25em] text-lime-300">One more step</p>
       <h1 className="mt-3 text-3xl font-black">Check your email.</h1>
