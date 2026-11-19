@@ -34,6 +34,7 @@ export default function OwnerControls({ profile, users, clubs }: { profile: Prof
       if (displayName.trim().length > 60) throw new Error('Display name must be 60 characters or fewer.')
       if (bio.length > 280) throw new Error('Bio must be 280 characters or fewer.')
       if (avatarUrl && !/^https:\/\//i.test(avatarUrl)) throw new Error('Avatar URL must start with https://')
+      if (!profile?.id) throw new Error('Your owner profile could not be found. Refresh the page and try again.')
       const supabase = createClient()
       const { error } = await supabase.from('profiles').update({
         username: cleanUsername,
@@ -41,7 +42,7 @@ export default function OwnerControls({ profile, users, clubs }: { profile: Prof
         avatar_url: avatarUrl.trim() || null,
         bio: bio.trim() || null,
         updated_at: new Date().toISOString(),
-      }).eq('id', profile?.id)
+      }).eq('id', profile.id)
       if (error) throw error
       setProfileNotice('Owner profile saved.')
       router.refresh()
